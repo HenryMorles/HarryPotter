@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "CPP_BaseSpell.h"
 #include "CPP_BaseProjectile.generated.h"
 
 UCLASS()
-class HARRYPOTTER_API ACPP_BaseProjectile : public AActor
+class HARRYPOTTER_API ACPP_BaseProjectile : public ACPP_BaseSpell
 {
 	GENERATED_BODY()
 	
@@ -23,9 +23,6 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* HitParticles;
-
-	UPROPERTY(EditAnywhere)
-	float Damage;
 
 protected:
 	// Called when the game starts or when spawned

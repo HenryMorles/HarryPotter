@@ -10,6 +10,7 @@
 #include "Animation/AnimMontage.h"
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "Blueprint/UserWidget.h"
+#include "CPP_PlayerState.h"
 
 
 ACPP_PlayerCharacter::ACPP_PlayerCharacter()
@@ -45,12 +46,22 @@ ACPP_PlayerCharacter::ACPP_PlayerCharacter()
 
 	PhysicsHandle = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandle"));
 
-	bIsHoldingObject = false;
+	bIsUsingLeviationSpell = false;
+	bIsUsingFireStormSpell = false;
+
+	MaxHealth = 100.0f;
+	MaxMana = 100.0f;
+	MaxStrength = 100.0f;
+
+	ManaRegenPerSecond = 3.0f;
 }
 
 void ACPP_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	Mana = MaxMana;
+	Strength = MaxStrength;
 
 	WandRef = GetWorld()->SpawnActor<ACPP_MagicWand>(WandClass);
 	WandRef->AttachToComponent(SafeModeWandSocket, FAttachmentTransformRules::KeepRelativeTransform);
@@ -58,6 +69,11 @@ void ACPP_PlayerCharacter::BeginPlay()
 
 	FTimerHandle UnusedHandle;
 	GetWorldTimerManager().SetTimer(UnusedHandle, this, &ACPP_PlayerCharacter::MoveGrabbedObject, 0.1f, true);
+
+	FTimerHandle UnusedHandle1;
+	GetWorldTimerManager().SetTimer(UnusedHandle1, this, &ACPP_PlayerCharacter::ManaRegen, 1.0f, true);
+
+	PlayerStateRef = Cast<ACPP_PlayerState>(GetPlayerState());
 }
 
 void ACPP_PlayerCharacter::Tick(float DeltaTime)
@@ -141,65 +157,132 @@ void ACPP_PlayerCharacter::SwitchBattleMode()
 	}
 }
 
-void ACPP_PlayerCharacter::MoveGrabbedObject()
+void ACPP_PlayerCharacter::MoveGrabbedObject()  // Update location of grabbed object and add impuls for correct moving
 {
-	if (bIsHoldingObject)
+	if (bIsUsingLeviationSpell && PlayerStateRef)
 	{
 		PhysicsHandle->SetTargetLocation(GrabPoint->GetComponentLocation());
 		PhysicsHandle->GrabbedComponent->AddImpulse(FVector(0.0f, 0.0f, 0.0f));
+
+		if (Mana - PlayerStateRef->LeviationSpell_Settings.ManaCost > 0)
+		{
+			Mana -= PlayerStateRef->LeviationSpell_Settings.ManaCost;
+		}
+		else
+		{
+			float AnimDuration = PlayAnimMontage(StopLeviationSpell_Montage);
+			bIsUsingLeviationSpell = false;
+
+			BeginPlay_Anim(AnimDuration, false);
+
+			GetWorldTimerManager().SetTimer(SpellTimer, WandRef, &ACPP_MagicWand::StopUseLeviationSpell, AnimDuration / 2, false);
+		}
 	}
 }
 
-void ACPP_PlayerCharacter::UseMagic()
+void ACPP_PlayerCharacter::UseMagic()  // Choosing a spell to use
 {
 	if (bBattleMode && !bIsPlayingAnimation)
 	{
-		switch (WandRef->CurrentSpell)
+		if (WandRef->CurrentSpell == Spell::LeviationSpell && Mana - PlayerStateRef->LeviationSpell_Settings.ManaCost > 0)
 		{
-		case WandRef->Spell::LeviationSpell:
-		{
-			if (bIsHoldingObject)
+			if (!bIsUsingLeviationSpell && LeviationSpell_Montage)
 			{
-				if (StopLeviationSpell_Montage)
+				UseLeviationSpell();
+			}
+			else if (StopLeviationSpell_Montage && bIsUsingLeviationSpell)
+			{
+				StopUseLeviationSpell();
+			}
+		}
+
+		else if (WandRef->CurrentSpell == Spell::FireBallSpell)
+		{
+			if (FireBallSpell_Montage)
+			{
+				UseFireBallSpell();
+			}
+		}
+
+		else if (WandRef->CurrentSpell == Spell::FireStormSpell)
+		{
+			if (!bIsUsingFireStormSpell)
+			{
+				if (FireStormSpell_Montage)
 				{
-					float AnimDuration = PlayAnimMontage(StopLeviationSpell_Montage);
-
-					BeginPlay_Anim(AnimDuration);
-
-					FTimerHandle UnusedHandle;
-					GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::StopUseLeviationSpell, AnimDuration / 2, false);
+					UseFireStormSpell();
 				}
 			}
 			else
 			{
-				if (LeviationSpell_Montage)
+				if (StopFireStormSpell_Montage && bIsUsingFireStormSpell)
 				{
-					float AnimDuration = PlayAnimMontage(LeviationSpell_Montage);
-
-					BeginPlay_Anim(AnimDuration);
-
-					FTimerHandle UnusedHandle;
-					GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::UseLeviationSpell, AnimDuration / 2 - 0.2f, false);
+					StopUseFireStormSpell();
 				}
 			}
-		}break;
-
-		case WandRef->Spell::FireBallSpell:
-		{
-			if (FireSpell_Montage)
-			{
-				float AnimDuration = PlayAnimMontage(FireSpell_Montage);
-
-				BeginPlay_Anim(AnimDuration);
-
-				//WandRef->UseFireBallSpell();
-
-				FTimerHandle UnusedHandle;
-				GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::UseFireBallSpell, AnimDuration / 2, false);
-			}
-		}break;
-
 		}
+	}
+}
+
+void ACPP_PlayerCharacter::UseLeviationSpell()
+{
+	float AnimDuration = PlayAnimMontage(LeviationSpell_Montage);
+
+	BeginPlay_Anim(AnimDuration, false);
+
+	FTimerHandle UnusedHandle;
+	GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::UseLeviationSpell, AnimDuration / 2 - 0.2f, false);
+}
+
+void ACPP_PlayerCharacter::StopUseLeviationSpell()
+{
+	float AnimDuration = PlayAnimMontage(StopLeviationSpell_Montage);
+
+	BeginPlay_Anim(AnimDuration, false);
+
+	GetWorldTimerManager().SetTimer(SpellTimer, WandRef, &ACPP_MagicWand::StopUseLeviationSpell, AnimDuration / 2, false);
+}
+
+void ACPP_PlayerCharacter::UseFireBallSpell()
+{
+	float AnimDuration = PlayAnimMontage(FireBallSpell_Montage);
+
+	BeginPlay_Anim(AnimDuration, false);
+
+	FTimerHandle UnusedHandle;
+	GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::UseFireBallSpell, AnimDuration / 2, false);
+}
+
+void ACPP_PlayerCharacter::UseFireStormSpell()
+{
+	float AnimDuration = PlayAnimMontage(FireStormSpell_Montage);
+
+	BeginPlay_Anim(AnimDuration, true);
+
+	FTimerHandle UnusedHandle;
+	GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::UseFireStormSpell, AnimDuration / 2 - 0.05f, false);
+}
+
+void ACPP_PlayerCharacter::StopUseFireStormSpell()
+{
+	bIsUsingFireStormSpell = false;
+
+	float AnimDuration = PlayAnimMontage(StopFireStormSpell_Montage);
+
+	BeginPlay_Anim(AnimDuration, true);
+
+	GetWorldTimerManager().SetTimer(SpellTimer, WandRef, &ACPP_MagicWand::StopUseFireStormSpell, AnimDuration / 2 + 0.2f, false);
+}
+
+void ACPP_PlayerCharacter::EndPlay_Anim(bool bStopCharacter)
+{
+	if (bIsUsingFireStormSpell)  //When we use FireStormSpell we can't move
+	{
+		Super::EndPlay_Anim(false);
+	}
+	else
+	{
+		Super::EndPlay_Anim(bStopCharacter);
 	}
 }
 
@@ -211,4 +294,24 @@ void ACPP_PlayerCharacter::ChangeSpellUp()
 void ACPP_PlayerCharacter::ChangeSpellDown()
 {
 	WandRef->ChangeSpellDown();
+}
+
+void ACPP_PlayerCharacter::Death()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Death")));
+}
+
+void ACPP_PlayerCharacter::ManaRegen()
+{
+	if (!bIsUsingLeviationSpell && !bIsUsingFireStormSpell && !bIsPlayingAnimation)
+	{
+		if (Mana + ManaRegenPerSecond < MaxMana)
+		{
+			Mana += ManaRegenPerSecond;
+		}
+		else
+		{
+			Mana = MaxMana;
+		}
+	}
 }

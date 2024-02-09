@@ -6,6 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "CPP_MagicWand.generated.h"
 
+
+enum Spell;
+
 UCLASS()
 class HARRYPOTTER_API ACPP_MagicWand : public AActor
 {
@@ -14,8 +17,6 @@ class HARRYPOTTER_API ACPP_MagicWand : public AActor
 public:
 	// Sets default values for this actor's properties
 	ACPP_MagicWand();
-
-public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* Mesh;
@@ -29,29 +30,34 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<class ACPP_BaseProjectile> FireBallClass;
 
-	enum Spell
-	{
-		LeviationSpell,
-		FireBallSpell
-	};
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class ACPP_FireStormSpell> FireStormClass;
+
+	ACPP_FireStormSpell* FireStormRef;
 
 	Spell CurrentSpell;
 
 	TArray<Spell> ListOfSpells;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+	
 	void UseLeviationSpell();
 	void StopUseLeviationSpell();
 
 	void UseFireBallSpell();
 
+	void UseFireStormSpell();
+	void StopUseFireStormSpell();
+
 	void ChangeSpellUp();
 	void ChangeSpellDown();
+};
+
+
+
+enum Spell
+{
+	LeviationSpell,
+	FireBallSpell,
+	FireStormSpell
 };

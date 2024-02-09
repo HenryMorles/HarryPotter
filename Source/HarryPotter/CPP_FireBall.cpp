@@ -17,17 +17,3 @@ ACPP_FireBall::ACPP_FireBall()
 
 	Damage = 10.0f;
 }
-
-// Called when the game starts or when spawned
-void ACPP_FireBall::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
-
-// Called every frame
-void ACPP_FireBall::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}

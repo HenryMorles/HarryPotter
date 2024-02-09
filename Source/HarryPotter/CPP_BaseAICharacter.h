@@ -24,6 +24,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UAnimMontage* Attack_Montage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* Death_Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UCapsuleComponent* AttackColision_1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UCapsuleComponent* AttackColision_2;
+
+	bool bIsDamageApplied;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Damage;
+
+	bool bIsPlayerControlled;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -39,11 +55,15 @@ public:
 	void OnHearNoise(APawn* OtherActor, const FVector& Location, float Volume);
 
 	UFUNCTION()
-	void OnSeePawn(APawn* OtherPawn);
+	virtual void OnSeePawn(APawn* OtherPawn);
 
 	UFUNCTION()
 	void Attack(APawn* TargetPawn);
 
-	virtual void BeginPlay_Anim(float AnimDuration)override;
-	virtual void EndPlay_Anim()override;
+	virtual void EndPlay_Anim(bool bStopCharacter)override;
+
+	UFUNCTION()
+	void BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	void DestroyCharacter();
 };

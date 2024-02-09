@@ -13,6 +13,7 @@ ACPP_PlayerController::ACPP_PlayerController()
 void ACPP_PlayerController::BeginPlay()
 {
 	AimWidget = CreateWidget(this, AimWidgetClass);
+
 	if (AimWidget)
 	{
 		AimWidget->AddToViewport();

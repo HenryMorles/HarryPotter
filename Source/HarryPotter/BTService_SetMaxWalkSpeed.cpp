@@ -19,10 +19,14 @@ UBTService_SetMaxWalkSpeed::UBTService_SetMaxWalkSpeed()
 void UBTService_SetMaxWalkSpeed::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
+	ACPP_BaseAICharacter* OwnerPawn = Cast<ACPP_BaseAICharacter>(OwnerComp.GetAIOwner()->GetPawn());
 
-	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-	if (PlayerPawn)
+	if (!OwnerPawn->bIsPlayingAnimation && !OwnerPawn->bIsDeath)
 	{
-		Cast<ACPP_BaseAICharacter>(OwnerComp.GetAIOwner()->GetPawn())->GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+		OwnerPawn->GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+	}
+	else
+	{
+		OwnerPawn->GetCharacterMovement()->MaxWalkSpeed = 0.0f;  //If some animation is played, the speed is set to 0
 	}
 }

@@ -2,6 +2,8 @@
 
 
 #include "CPP_BaseCharacter.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 // Sets default values
 ACPP_BaseCharacter::ACPP_BaseCharacter()
@@ -11,11 +13,11 @@ ACPP_BaseCharacter::ACPP_BaseCharacter()
 
 	MaxHealth = 100;
 
-	Health = MaxHealth;
-
 	bBattleMode = false;
 
 	bIsPlayingAnimation = false;
+
+	bIsDeath = false;
 }
 
 // Called when the game starts or when spawned
@@ -23,6 +25,7 @@ void ACPP_BaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	Health = MaxHealth;
 }
 
 // Called every frame
@@ -32,43 +35,59 @@ void ACPP_BaseCharacter::Tick(float DeltaTime)
 
 }
 
-// Called to bind functionality to input
-void ACPP_BaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-
 float ACPP_BaseCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
 	Health -= DamageApplied;
 
-	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("HP: %f"), Health));
-
 	if (Health <= 0)
 	{
 		Death();
+	}
+	else
+	{
+		if (TakeDamage_Montage)
+		{
+			float AnimDuration = PlayAnimMontage(TakeDamage_Montage);
+
+			BeginPlay_Anim(AnimDuration, true);
+		}
 	}
 
 	return DamageApplied;
 }
 
-void ACPP_BaseCharacter::Death()
+void ACPP_BaseCharacter::Death() //The function is overridden in other classes
 {
-
+	bIsDeath = true;
 }
 
-void ACPP_BaseCharacter::BeginPlay_Anim(float AnimDuration)
+void ACPP_BaseCharacter::BeginPlay_Anim(float AnimDuration, bool bStopCharacter)   // Function for waiting and setting for animation to play
 {
+	if (bStopCharacter)  // If you want to stop a character during playing animation
+	{
+		bUseControllerRotationYaw = true;
+
+		GetCharacterMovement()->MaxWalkSpeed = 0.0f;
+	}
+
 	bIsPlayingAnimation = true;
 
 	FTimerHandle UnusedHandle;
-	GetWorldTimerManager().SetTimer(UnusedHandle, this, &ACPP_BaseCharacter::EndPlay_Anim, AnimDuration, false);
+	FTimerDelegate Delegate = FTimerDelegate::CreateUObject(this, &ACPP_BaseCharacter::EndPlay_Anim, bStopCharacter);
+
+	GetWorldTimerManager().SetTimer(UnusedHandle, Delegate, AnimDuration, false);
 }
 
-void ACPP_BaseCharacter::EndPlay_Anim()
+void ACPP_BaseCharacter::EndPlay_Anim(bool bStopCharacter)
 {
+	if (bStopCharacter)
+	{
+		bUseControllerRotationYaw = true;
+
+		GetCharacterMovement()->MaxWalkSpeed = 600.0f;
+	}
+
 	bIsPlayingAnimation = false;
 }

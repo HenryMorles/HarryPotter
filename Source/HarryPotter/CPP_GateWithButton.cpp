@@ -59,7 +59,7 @@ void ACPP_GateWithButton::BeginPlay()
 	{
 		CloseGate();
 	}
-	if (CurveFloat)
+	if (CurveFloat)  // Setting the timeline
 	{
 		MyTimeline->AddInterpFloat(CurveFloat, InterpFunction, FName("Alpha"));
 		
@@ -80,7 +80,8 @@ void ACPP_GateWithButton::Tick(float DeltaTime)
 void ACPP_GateWithButton::BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	TArray<UPrimitiveComponent*> OverlappingComponents;
-	ButtonCollider_1->GetOverlappingComponents(OverlappingComponents);
+
+	ButtonCollider_1->GetOverlappingComponents(OverlappingComponents);     // If an object falls into place, we should check if the remaining objects are in place
 	bButtonState_1 = !OverlappingComponents.IsEmpty();
 
 	ButtonCollider_2->GetOverlappingComponents(OverlappingComponents);

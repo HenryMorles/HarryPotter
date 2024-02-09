@@ -8,7 +8,7 @@
 #include "CPP_PlayerCharacter.h"
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
+#include "Components/CapsuleComponent.h"
 
 
 ACPP_BaseAICharacter::ACPP_BaseAICharacter()
@@ -19,6 +19,16 @@ ACPP_BaseAICharacter::ACPP_BaseAICharacter()
 	PawnSensor->SensingInterval = 0.25f; // 4 times per second
 	PawnSensor->bOnlySensePlayers = false;
 	PawnSensor->SetPeripheralVisionAngle(85.f);
+
+	AttackColision_1 = CreateDefaultSubobject<UCapsuleComponent>(TEXT("AttackColision1"));
+
+	AttackColision_2 = CreateDefaultSubobject<UCapsuleComponent>(TEXT("AttackColision2"));
+
+	Damage = 0.0f;
+
+	bIsDamageApplied = false;
+
+	bIsPlayerControlled = false;
 }
 
 void ACPP_BaseAICharacter::BeginPlay()
@@ -27,13 +37,23 @@ void ACPP_BaseAICharacter::BeginPlay()
 
 	PawnSensor->OnSeePawn.AddDynamic(this, &ACPP_BaseAICharacter::OnSeePawn);
 	PawnSensor->OnHearNoise.AddDynamic(this, &ACPP_BaseAICharacter::OnHearNoise);
+
+	AttackColision_1->OnComponentBeginOverlap.AddDynamic(this, &ACPP_BaseAICharacter::BeginOverlap);
+	AttackColision_2->OnComponentBeginOverlap.AddDynamic(this, &ACPP_BaseAICharacter::BeginOverlap);
 }
 
 void ACPP_BaseAICharacter::Death()
 {
 	Super::Death();
 
-	Destroy();
+	if (Death_Montage && bIsDeath)
+	{
+		float AnimDuration = PlayAnimMontage(Death_Montage);
+		GetCharacterMovement()->MaxWalkSpeed = 0.0f;
+
+		FTimerHandle UnusedHandle;
+		GetWorldTimerManager().SetTimer(UnusedHandle, this, &ACPP_BaseAICharacter::DestroyCharacter, AnimDuration, false);  //After animation, destroy the character
+	}
 }
 
 void ACPP_BaseAICharacter::OnHearNoise(APawn* OtherActor, const FVector& Location, float Volume)
@@ -43,37 +63,47 @@ void ACPP_BaseAICharacter::OnHearNoise(APawn* OtherActor, const FVector& Locatio
 
 void ACPP_BaseAICharacter::OnSeePawn(APawn* OtherPawn)
 {
-	if (Cast<ACPP_PlayerCharacter>(OtherPawn))
+	if (OtherPawn && (Cast<ACPP_BaseAICharacter>(OtherPawn) && Cast<ACPP_BaseAICharacter>(OtherPawn)->bIsPlayerControlled) || Cast<ACPP_PlayerCharacter>(OtherPawn))   //Is OtherPawn the Player or a Player-controlled pawn
 	{
 		Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsObject(FName("TargetCharacter"), OtherPawn);
-
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("I see you")));
 	}
 }
 
 void ACPP_BaseAICharacter::Attack(APawn* TargetPawn)
 {
-	if (Attack_Montage)
+	if (Attack_Montage && !bIsDeath && !bIsPlayingAnimation)
 	{
 		float AnimDuration = PlayAnimMontage(Attack_Montage);
 
-		BeginPlay_Anim(AnimDuration);
-
+		BeginPlay_Anim(AnimDuration, true);
 	}
 }
 
-void ACPP_BaseAICharacter::BeginPlay_Anim(float AnimDuration)
+void ACPP_BaseAICharacter::EndPlay_Anim(bool bStopCharacter)
 {
-	Super::BeginPlay_Anim(AnimDuration);
+	Super::EndPlay_Anim(bStopCharacter);
 
-	GetCharacterMovement()->MaxWalkSpeed = 0.0f;
-	bUseControllerRotationYaw = false;
+	bIsDamageApplied = false;
 }
 
-void ACPP_BaseAICharacter::EndPlay_Anim()
+void ACPP_BaseAICharacter::BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	Super::EndPlay_Anim();
+	if (!bIsDamageApplied && bIsPlayingAnimation && OtherActor && OtherActor != this)
+	{
+		if ((Cast<ACPP_BaseAICharacter>(OtherActor) && Cast<ACPP_BaseAICharacter>(OtherActor)->bIsPlayerControlled) || Cast<ACPP_PlayerCharacter>(OtherActor))
+		{
+			FHitResult Hit;
+			FVector ShotDirection;
+			FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
 
-	GetCharacterMovement()->MaxWalkSpeed = 600.0f;
-	bUseControllerRotationYaw = true;
+			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
+
+			bIsDamageApplied = true;  // Damage can only be dealt once per animation, so this variable will prevent it from begin dealt again
+		}
+	}
+}
+
+void ACPP_BaseAICharacter::DestroyCharacter()
+{
+	Destroy();
 }

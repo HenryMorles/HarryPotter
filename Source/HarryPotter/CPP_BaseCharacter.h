@@ -15,10 +15,10 @@ public:
 	// Sets default values for this character's properties
 	ACPP_BaseCharacter();
 
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MaxHealth;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Health;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -26,6 +26,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsPlayingAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsDeath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* TakeDamage_Montage;
 
 protected:
 	// Called when the game starts or when spawned
@@ -35,13 +41,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
 
 	virtual void Death();
 
-	virtual void BeginPlay_Anim(float AnimDuration);
-	virtual void EndPlay_Anim();
+	virtual void BeginPlay_Anim(float AnimDuration, bool bStopCharacter);
+	virtual void EndPlay_Anim(bool bStopCharacter);
 };

@@ -26,6 +26,18 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxMana;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Mana;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxStrength;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Strength;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 	class USpringArmComponent* CameraBoom;
 
@@ -51,9 +63,15 @@ public:
 	class UAnimMontage* StopLeviationSpell_Montage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	class UAnimMontage* FireSpell_Montage;
+	class UAnimMontage* FireBallSpell_Montage;
 
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* FireStormSpell_Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* StopFireStormSpell_Montage;
+
+	FTimerHandle SpellTimer;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UPhysicsHandleComponent* PhysicsHandle;
@@ -62,7 +80,16 @@ public:
 	USceneComponent* GrabPoint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	bool bIsHoldingObject;
+	bool bIsUsingLeviationSpell;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsUsingFireStormSpell;
+
+	class ACPP_PlayerState* PlayerStateRef;
+
+	float ManaRegenPerSecond;
+
+	UPrimitiveComponent* GrabbedComponentRef;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)override;
 
@@ -75,8 +102,24 @@ private:
 
 	void MoveGrabbedObject();
 
+public:
+
 	void UseMagic();
+
+	void UseLeviationSpell();
+	void StopUseLeviationSpell();
+
+	void UseFireBallSpell();
+
+	void UseFireStormSpell();
+	void StopUseFireStormSpell();
 
 	void ChangeSpellUp();
 	void ChangeSpellDown();
+
+	void Death()override;
+
+	void ManaRegen();
+
+	virtual void EndPlay_Anim(bool bStopCharacter)override;
 };

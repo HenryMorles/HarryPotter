@@ -9,6 +9,7 @@
 void ACPP_AIController::BeginPlay()
 {
 	Super::BeginPlay();
+
 	AIBehavior = Cast<ACPP_BaseAICharacter>(GetPawn())->AIBehavior;
 
 	if (AIBehavior)

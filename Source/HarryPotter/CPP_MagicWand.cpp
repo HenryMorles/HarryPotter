@@ -10,6 +10,9 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "CPP_BaseProjectile.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "CPP_FireStormSpell.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "CPP_PlayerState.h"
 
 
 // Sets default values
@@ -28,18 +31,7 @@ ACPP_MagicWand::ACPP_MagicWand()
 
 	ListOfSpells.Add(Spell::LeviationSpell);
 	ListOfSpells.Add(Spell::FireBallSpell);
-}
-
-// Called when the game starts or when spawned
-void ACPP_MagicWand::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-// Called every frame
-void ACPP_MagicWand::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	ListOfSpells.Add(Spell::FireStormSpell);
 }
 
 void ACPP_MagicWand::UseLeviationSpell()
@@ -51,24 +43,23 @@ void ACPP_MagicWand::UseLeviationSpell()
 		FHitResult Hit;
 
 		FVector TraceStart = OwnerRef->FollowCamera->GetComponentLocation();
-		FVector TraceEnd = OwnerRef->FollowCamera->GetComponentLocation() + OwnerRef->FollowCamera->GetForwardVector() * 1000.0f;
+		FVector TraceEnd = OwnerRef->FollowCamera->GetComponentLocation() + OwnerRef->FollowCamera->GetForwardVector() * 1000.0f;  // Line from camera forward
 
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
 		QueryParams.AddIgnoredActor(OwnerRef);
 
 		FCollisionObjectQueryParams ObjectParams;
-		ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel1);
+		ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel1);    // Custom channel
 
-		GetWorld()->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, ObjectParams, QueryParams);
-
-		//DrawDebugLine(GetWorld(), TraceStart, TraceEnd, Hit.bBlockingHit ? FColor::Blue : FColor::Red, false, 5.0f, 0, 10.0f);
+		GetWorld()->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, ObjectParams, QueryParams);  
 
 		if (Hit.GetComponent())
 		{
-			OwnerRef->PhysicsHandle->GrabComponentAtLocationWithRotation(Hit.GetComponent(), TEXT(""), Hit.GetActor()->GetActorLocation(), Hit.GetActor()->GetActorRotation());
+			OwnerRef->PhysicsHandle->GrabComponentAtLocationWithRotation(Hit.GetComponent(), TEXT(""), Hit.GetActor()->GetActorLocation(), Hit.GetActor()->GetActorRotation());  //Grabbing object to make it fly
 			OwnerRef->GrabPoint->SetWorldLocation(FVector(Hit.GetActor()->GetActorLocation().X, Hit.GetActor()->GetActorLocation().Y, Hit.GetActor()->GetActorLocation().Z + 100));
-			OwnerRef->bIsHoldingObject = true;
+			OwnerRef->bIsUsingLeviationSpell = true;
+			OwnerRef->GrabbedComponentRef = Hit.GetComponent();
 		}
 	}
 }
@@ -79,9 +70,13 @@ void ACPP_MagicWand::StopUseLeviationSpell()
 
 	if (OwnerRef)
 	{
+		UPrimitiveComponent* GrabbedComponentRef = OwnerRef->PhysicsHandle->GetGrabbedComponent();
+
 		OwnerRef->PhysicsHandle->ReleaseComponent();
 		OwnerRef->GrabPoint->SetWorldLocation(FVector(0.0f, 0.0f, 0.0f));
-		OwnerRef->bIsHoldingObject = false;
+		OwnerRef->bIsUsingLeviationSpell = false;
+
+		OwnerRef->GrabbedComponentRef->AddImpulse(FVector(0.0f, 0.0f, 0.0f));
 	}
 }
 
@@ -89,7 +84,7 @@ void ACPP_MagicWand::UseFireBallSpell()
 {
 	ACPP_PlayerCharacter* OwnerRef = Cast<ACPP_PlayerCharacter>(GetOwner());
 
-	if (OwnerRef)
+	if (OwnerRef && OwnerRef->Mana - OwnerRef->PlayerStateRef->FireBallSpell_Settings.ManaCost > 0)
 	{
 		FHitResult Hit;
 
@@ -112,7 +107,7 @@ void ACPP_MagicWand::UseFireBallSpell()
 
 		FRotator Rotation;
 
-		if (Hit.GetActor())
+		if (Hit.GetActor())  // If I hit an actor, the projectile will fly to the Hit.Location
 		{
 			Rotation = UKismetMathLibrary::FindLookAtRotation(SpellSpawnPoint->GetComponentLocation(), Hit.Location);
 		}
@@ -123,6 +118,34 @@ void ACPP_MagicWand::UseFireBallSpell()
 
 		ACPP_BaseProjectile* Projectile = GetWorld()->SpawnActor<ACPP_BaseProjectile>(FireBallClass, Location, Rotation);
 		Projectile->SetOwner(this);
+
+		OwnerRef->Mana -= OwnerRef->PlayerStateRef->FireBallSpell_Settings.ManaCost;
+	}
+}
+
+void ACPP_MagicWand::UseFireStormSpell()
+{
+	ACPP_PlayerCharacter* OwnerRef = Cast<ACPP_PlayerCharacter>(GetOwner());
+
+	if (OwnerRef)
+	{
+		OwnerRef->bIsUsingFireStormSpell = true;
+
+		FireStormRef = GetWorld()->SpawnActor<ACPP_FireStormSpell>(FireStormClass, SpellSpawnPoint->GetComponentLocation(), FRotator(0.0f, 0.0f, 0.0f));
+		FireStormRef->SetOwner(this);
+		FireStormRef->AttachToActor(OwnerRef, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	}
+}
+
+void ACPP_MagicWand::StopUseFireStormSpell()
+{
+	ACPP_PlayerCharacter* OwnerRef = Cast<ACPP_PlayerCharacter>(GetOwner());
+
+	OwnerRef->bIsUsingFireStormSpell = false;
+
+	if (FireStormRef && OwnerRef)
+	{
+		FireStormRef->StopUsingSpell();
 	}
 }
 
@@ -141,8 +164,11 @@ void ACPP_MagicWand::ChangeSpellUp()
 	if (CurrentSpell == Spell::LeviationSpell)
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Leviation"));
 
-	if (CurrentSpell == Spell::FireBallSpell)
+	else if (CurrentSpell == Spell::FireBallSpell)
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire"));
+
+	else if (CurrentSpell == Spell::FireStormSpell)
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire Storm"));
 }
 
 void ACPP_MagicWand::ChangeSpellDown()
@@ -160,6 +186,9 @@ void ACPP_MagicWand::ChangeSpellDown()
 	if (CurrentSpell == Spell::LeviationSpell)
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Leviation"));
 
-	if (CurrentSpell == Spell::FireBallSpell)
+	else if (CurrentSpell == Spell::FireBallSpell)
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire"));
+
+	else if (CurrentSpell == Spell::FireStormSpell)
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire Storm"));
 }
