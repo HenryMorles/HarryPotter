@@ -14,4 +14,15 @@ class HARRYPOTTER_API ACPP_BaseEnemy : public ACPP_BaseAICharacter
 {
 	GENERATED_BODY()
 	
+public:
+
+	ACPP_BaseEnemy();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* Aggro_Montage;
+
+	bool bIsEverSawPlayer;
+
+
+	void OnSeePawn(APawn* OtherPawn)override;
 };

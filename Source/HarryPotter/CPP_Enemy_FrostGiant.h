@@ -17,4 +17,5 @@ class HARRYPOTTER_API ACPP_Enemy_FrostGiant : public ACPP_BaseEnemy
 public:
 
 	ACPP_Enemy_FrostGiant();
+
 };
