@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CPP_BaseCharacter.h"
+#include "Components/TimelineComponent.h"
 #include "CPP_PlayerCharacter.generated.h"
 
 /**
@@ -71,7 +72,35 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UAnimMontage* StopFireStormSpell_Montage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* ForwardDash_Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USceneComponent* ForwardDashPoint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USceneComponent* BackDashPoint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USceneComponent* RightDashPoint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USceneComponent* LeftDashPoint;
+
 	FTimerHandle SpellTimer;
+
+	UPROPERTY(EditAnywhere)
+	class UCurveFloat* CurveFloat;
+
+	class UTimelineComponent* DashTimeline;
+
+	UPROPERTY()
+	FVector StartDashLocation;
+
+	UPROPERTY()
+	FVector EndDashLocation;
+
+	FOnTimelineFloat InterpFunction{};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UPhysicsHandleComponent* PhysicsHandle;
@@ -84,6 +113,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsUsingFireStormSpell;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* FireStormLaunchSound;
 
 	class ACPP_PlayerState* PlayerStateRef;
 
@@ -101,6 +133,8 @@ private:
 	void SwitchBattleMode();
 
 	void MoveGrabbedObject();
+
+	void JumpDash();
 
 public:
 
@@ -120,6 +154,9 @@ public:
 	void Death()override;
 
 	void ManaRegen();
+
+	UFUNCTION()
+	void TimelineProgress(float Value);
 
 	virtual void EndPlay_Anim(bool bStopCharacter)override;
 };

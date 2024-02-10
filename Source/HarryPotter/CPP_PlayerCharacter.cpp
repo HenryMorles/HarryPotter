@@ -11,6 +11,11 @@
 #include "PhysicsEngine/PhysicsHandleComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "CPP_PlayerState.h"
+#include "CPP_FireStormSpell.h"
+#include "Components/AudioComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Components/ArrowComponent.h"
 
 
 ACPP_PlayerCharacter::ACPP_PlayerCharacter()
@@ -46,6 +51,21 @@ ACPP_PlayerCharacter::ACPP_PlayerCharacter()
 
 	PhysicsHandle = CreateDefaultSubobject<UPhysicsHandleComponent>(TEXT("PhysicsHandle"));
 
+	ForwardDashPoint = CreateDefaultSubobject<USceneComponent>(TEXT("ForwardDashPoint"));
+	ForwardDashPoint->SetupAttachment(RootComponent);
+
+	BackDashPoint = CreateDefaultSubobject<USceneComponent>(TEXT("BackDashPoint"));
+	BackDashPoint->SetupAttachment(RootComponent);
+
+	RightDashPoint = CreateDefaultSubobject<USceneComponent>(TEXT("RightDashPoint"));
+	RightDashPoint->SetupAttachment(RootComponent);
+
+	LeftDashPoint = CreateDefaultSubobject<USceneComponent>(TEXT("LeftDashPoint"));
+	LeftDashPoint->SetupAttachment(RootComponent);
+
+	DashTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DashTimeline"));
+	InterpFunction.BindUFunction(this, FName("TimelineProgress"));
+
 	bIsUsingLeviationSpell = false;
 	bIsUsingFireStormSpell = false;
 
@@ -74,6 +94,14 @@ void ACPP_PlayerCharacter::BeginPlay()
 	GetWorldTimerManager().SetTimer(UnusedHandle1, this, &ACPP_PlayerCharacter::ManaRegen, 1.0f, true);
 
 	PlayerStateRef = Cast<ACPP_PlayerState>(GetPlayerState());
+
+	if (CurveFloat)  //Setting the Timeline
+	{
+		DashTimeline->AddInterpFloat(CurveFloat, InterpFunction, FName("Alpha"));
+
+		DashTimeline->SetLooping(false);
+		DashTimeline->SetIgnoreTimeDilation(true);
+	}
 }
 
 void ACPP_PlayerCharacter::Tick(float DeltaTime)
@@ -89,7 +117,7 @@ void ACPP_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &ACPP_PlayerCharacter::MoveRight);
 	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis(TEXT("LookRight"), this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::JumpDash);
 	PlayerInputComponent->BindAction(TEXT("SwitchBattleMode"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::SwitchBattleMode);
 	PlayerInputComponent->BindAction(TEXT("UseMagic"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::UseMagic);
 	PlayerInputComponent->BindAction(TEXT("ChangeSpellUp"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::ChangeSpellUp);
@@ -180,6 +208,47 @@ void ACPP_PlayerCharacter::MoveGrabbedObject()  // Update location of grabbed ob
 	}
 }
 
+void ACPP_PlayerCharacter::JumpDash()
+{
+	if (bBattleMode)
+	{
+		FVector PlayerDirection = UKismetMathLibrary::InverseTransformDirection(GetActorTransform(), GetVelocity());
+
+		if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("W")))
+		{
+			StartDashLocation = GetActorLocation();
+			EndDashLocation = ForwardDashPoint->GetComponentLocation();
+
+			DashTimeline->PlayFromStart();
+		}
+		else if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("S")))
+		{
+			StartDashLocation = GetActorLocation();
+			EndDashLocation = BackDashPoint->GetComponentLocation();
+
+			DashTimeline->PlayFromStart();
+		}
+		else if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("A")))
+		{
+			StartDashLocation = GetActorLocation();
+			EndDashLocation = LeftDashPoint->GetComponentLocation();
+
+			DashTimeline->PlayFromStart();
+		}
+		else if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("D")))
+		{
+			StartDashLocation = GetActorLocation();
+			EndDashLocation = RightDashPoint->GetComponentLocation();
+
+			DashTimeline->PlayFromStart();
+		}
+	}
+	else
+	{
+		Jump();
+	}
+}
+
 void ACPP_PlayerCharacter::UseMagic()  // Choosing a spell to use
 {
 	if (bBattleMode && !bIsPlayingAnimation)
@@ -261,6 +330,8 @@ void ACPP_PlayerCharacter::UseFireStormSpell()
 
 	FTimerHandle UnusedHandle;
 	GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::UseFireStormSpell, AnimDuration / 2 - 0.05f, false);
+
+	UGameplayStatics::PlaySoundAtLocation(this, FireStormLaunchSound, GetActorLocation());
 }
 
 void ACPP_PlayerCharacter::StopUseFireStormSpell()
@@ -272,6 +343,10 @@ void ACPP_PlayerCharacter::StopUseFireStormSpell()
 	BeginPlay_Anim(AnimDuration, true);
 
 	GetWorldTimerManager().SetTimer(SpellTimer, WandRef, &ACPP_MagicWand::StopUseFireStormSpell, AnimDuration / 2 + 0.2f, false);
+
+	UGameplayStatics::PlaySoundAtLocation(WandRef->FireStormRef, WandRef->FireStormRef->EndSound, WandRef->FireStormRef->GetActorLocation());
+
+	WandRef->FireStormRef->LoopSoundRef->Stop();
 }
 
 void ACPP_PlayerCharacter::EndPlay_Anim(bool bStopCharacter)
@@ -314,4 +389,10 @@ void ACPP_PlayerCharacter::ManaRegen()
 			Mana = MaxMana;
 		}
 	}
+}
+
+void ACPP_PlayerCharacter::TimelineProgress(float Value)
+{
+	FVector NewLocation = FMath::Lerp(StartDashLocation, EndDashLocation, Value);
+	SetActorLocation(NewLocation, true);
 }

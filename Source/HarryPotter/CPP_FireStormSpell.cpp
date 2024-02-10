@@ -6,6 +6,8 @@
 #include "CPP_BaseAICharacter.h"
 #include "CPP_PlayerCharacter.h"
 #include "CPP_PlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 
 
 ACPP_FireStormSpell::ACPP_FireStormSpell()
@@ -40,6 +42,10 @@ void ACPP_FireStormSpell::BeginPlay()
 
 		MyTimeline->Play();
 	}
+	if (LoopSound)
+	{
+		LoopSoundRef = UGameplayStatics::SpawnSoundAtLocation(this, LoopSound, GetActorLocation());
+	}
 }
 
 void ACPP_FireStormSpell::Tick(float DeltaTime)  // Tick Interval = 0.1f;  Every tick enemies that are within the radius of the spell take damage
@@ -72,6 +78,16 @@ void ACPP_FireStormSpell::Tick(float DeltaTime)  // Tick Interval = 0.1f;  Every
 			if (PlayerRef->bIsUsingFireStormSpell)
 			{
 				PlayerRef->StopUseFireStormSpell();
+
+				if (EndSound)
+				{
+					UGameplayStatics::PlaySoundAtLocation(this, EndSound, GetActorLocation());
+				}
+
+				if (LoopSoundRef)
+				{
+					LoopSoundRef->Stop();
+				}
 			}
 		}
 	}
@@ -91,7 +107,6 @@ void ACPP_FireStormSpell::StopUsingSpell()
 
 	FTimerHandle UnusedHandle;
 	GetWorldTimerManager().SetTimer(UnusedHandle, this, &ACPP_FireStormSpell::DestroySpell, 2.0f, true);
-	
 }
 
 void ACPP_FireStormSpell::DestroySpell()

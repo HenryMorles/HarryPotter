@@ -35,6 +35,17 @@ public:
 
 	FOnTimelineFloat InterpFunction{};
 
+	UPROPERTY(EditAnywhere)
+	USoundBase* LaunchSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* LoopSound;
+
+	UAudioComponent* LoopSoundRef;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* EndSound;
+
 protected:
 
 	virtual void BeginPlay() override;
