@@ -44,6 +44,7 @@ public:
 	SpellSettings LeviationSpell_Settings;
 	SpellSettings FireBallSpell_Settings;
 	SpellSettings FireStormSpell_Settings;
+	SpellSettings DashSpell_Settings;
 };
 
 

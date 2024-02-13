@@ -40,11 +40,15 @@ void ACPP_BaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	{
 		FVector ShotDirection;
 		FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
-		OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
+		OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this->GetOwner()->GetOwner());
 
 		if (HitParticles)
 		{
 			UGameplayStatics::SpawnEmitterAtLocation(this, HitParticles, GetActorLocation(), GetActorRotation(), FVector(0.5f, 0.5f, 0.5f));
+		}
+		if (HitSound)
+		{
+			UGameplayStatics::SpawnSoundAtLocation(this, HitSound, GetActorLocation());
 		}
 	}
 

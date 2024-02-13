@@ -18,6 +18,9 @@ ACPP_PlayerState::ACPP_PlayerState()
 	FireStormSpell_Settings.BaseDamage = 10;
 	FireStormSpell_Settings.BaseManaCost = 2;
 	FireStormSpell_Settings.SetSpellLevel(1);
+
+	DashSpell_Settings.BaseManaCost = 5;
+	DashSpell_Settings.SetSpellLevel(1);
 }
 
 

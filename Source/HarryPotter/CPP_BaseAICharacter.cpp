@@ -65,7 +65,7 @@ void ACPP_BaseAICharacter::OnSeePawn(APawn* OtherPawn)
 {
 	if (OtherPawn && (Cast<ACPP_BaseAICharacter>(OtherPawn) && Cast<ACPP_BaseAICharacter>(OtherPawn)->bIsPlayerControlled) || Cast<ACPP_PlayerCharacter>(OtherPawn))   //Is OtherPawn the Player or a Player-controlled pawn
 	{
-		Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsObject(FName("TargetCharacter"), OtherPawn);
+		NoticedPawn(OtherPawn);
 	}
 }
 
@@ -106,4 +106,9 @@ void ACPP_BaseAICharacter::BeginOverlap(UPrimitiveComponent* OverlappedComponent
 void ACPP_BaseAICharacter::DestroyCharacter()
 {
 	Destroy();
+}
+
+void ACPP_BaseAICharacter::NoticedPawn(APawn* OtherPawn)
+{
+
 }

@@ -73,9 +73,6 @@ public:
 	class UAnimMontage* StopFireStormSpell_Montage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	class UAnimMontage* ForwardDash_Montage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USceneComponent* ForwardDashPoint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -89,6 +86,9 @@ public:
 
 	FTimerHandle SpellTimer;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UParticleSystemComponent* DashParticle;
+
 	UPROPERTY(EditAnywhere)
 	class UCurveFloat* CurveFloat;
 
@@ -101,6 +101,7 @@ public:
 	FVector EndDashLocation;
 
 	FOnTimelineFloat InterpFunction{};
+	FOnTimelineEvent TimelineFinished{};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UPhysicsHandleComponent* PhysicsHandle;
@@ -114,8 +115,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsUsingFireStormSpell;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsDashing;
+
 	UPROPERTY(EditAnywhere)
 	USoundBase* FireStormLaunchSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* FireBallLaunchSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* LeviationSpellCastSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* LeviationSpellStopSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* DashSound;
 
 	class ACPP_PlayerState* PlayerStateRef;
 
@@ -155,8 +171,13 @@ public:
 
 	void ManaRegen();
 
+	void EndDash();
+
 	UFUNCTION()
 	void TimelineProgress(float Value);
+
+	UFUNCTION()
+	void OnTimelineFinished();
 
 	virtual void EndPlay_Anim(bool bStopCharacter)override;
 };

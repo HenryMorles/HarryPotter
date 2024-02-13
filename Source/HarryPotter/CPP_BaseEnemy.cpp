@@ -3,6 +3,10 @@
 
 #include "CPP_BaseEnemy.h"
 #include "CPP_PlayerCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "CPP_AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+
 
 ACPP_BaseEnemy::ACPP_BaseEnemy()
 {
@@ -11,16 +15,39 @@ ACPP_BaseEnemy::ACPP_BaseEnemy()
 	bIsEverSawPlayer = false;
 }
 
+float ACPP_BaseEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	NoticedPawn(Cast<APawn>(DamageCauser));
+
+	return DamageApplied;
+}
+
 void ACPP_BaseEnemy::OnSeePawn(APawn* OtherPawn)
 {
 	Super::OnSeePawn(OtherPawn);
 
 	if (!bIsEverSawPlayer && OtherPawn && Cast<ACPP_PlayerCharacter>(OtherPawn) && Aggro_Montage)
 	{
+		if (AggroSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, AggroSound, GetActorLocation());
+		}
 		float AnimDuration = PlayAnimMontage(Aggro_Montage);
 
 		BeginPlay_Anim(AnimDuration, true);
 
 		bIsEverSawPlayer = true;
+	}
+}
+
+void ACPP_BaseEnemy::NoticedPawn(APawn* OtherPawn)
+{
+	Super::NoticedPawn(OtherPawn);
+
+	if(OtherPawn)
+	{ 
+	Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsObject(FName("TargetCharacter"), OtherPawn);
 	}
 }

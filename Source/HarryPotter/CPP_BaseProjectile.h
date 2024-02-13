@@ -24,6 +24,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* HitParticles;
 
+	UPROPERTY(EditAnywhere)
+	USoundBase* HitSound;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

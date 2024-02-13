@@ -70,7 +70,7 @@ void ACPP_FireStormSpell::Tick(float DeltaTime)  // Tick Interval = 0.1f;  Every
 
 			for (AActor* OverlappingActor : OverlappingActors)
 			{
-				Cast<ACPP_BaseAICharacter>(OverlappingActor)->TakeDamage(Damage, DamageEvent, nullptr, this);
+				Cast<ACPP_BaseAICharacter>(OverlappingActor)->TakeDamage(Damage, DamageEvent, nullptr, this->GetOwner()->GetOwner());
 			}
 		}
 		else

@@ -21,8 +21,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UAnimMontage* Aggro_Montage;
 
+	UPROPERTY(EditAnywhere)
+	USoundBase* AggroSound;
+
 	bool bIsEverSawPlayer;
 
+	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
 
 	void OnSeePawn(APawn* OtherPawn)override;
+
+	void NoticedPawn(APawn* OtherPawn)override;
 };
