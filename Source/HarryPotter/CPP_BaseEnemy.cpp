@@ -28,17 +28,24 @@ void ACPP_BaseEnemy::OnSeePawn(APawn* OtherPawn)
 {
 	Super::OnSeePawn(OtherPawn);
 
-	if (!bIsEverSawPlayer && OtherPawn && Cast<ACPP_PlayerCharacter>(OtherPawn) && Aggro_Montage)
+	if (!bIsDeath)
 	{
-		if (AggroSound)
+		if (!bIsEverSawPlayer && OtherPawn && Cast<ACPP_PlayerCharacter>(OtherPawn) && Aggro_Montage)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, AggroSound, GetActorLocation());
+			if (AggroSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(this, AggroSound, GetActorLocation());
+			}
+			float AnimDuration = PlayAnimMontage(Aggro_Montage);
+
+			BeginPlay_Anim(AnimDuration, true);
+
+			bIsEverSawPlayer = true;
 		}
-		float AnimDuration = PlayAnimMontage(Aggro_Montage);
-
-		BeginPlay_Anim(AnimDuration, true);
-
-		bIsEverSawPlayer = true;
+	}
+	else
+	{
+		Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->ClearValue(FName("TargetCharacter"));
 	}
 }
 
@@ -46,8 +53,8 @@ void ACPP_BaseEnemy::NoticedPawn(APawn* OtherPawn)
 {
 	Super::NoticedPawn(OtherPawn);
 
-	if(OtherPawn)
-	{ 
-	Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsObject(FName("TargetCharacter"), OtherPawn);
+	if (OtherPawn)
+	{
+		Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsObject(FName("TargetCharacter"), OtherPawn);
 	}
 }

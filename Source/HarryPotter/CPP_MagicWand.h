@@ -6,8 +6,14 @@
 #include "GameFramework/Actor.h"
 #include "CPP_MagicWand.generated.h"
 
-
-enum Spell;
+UENUM(BlueprintType)
+enum class Spell : uint8
+{
+	LeviationSpell UMETA(DisplayName = "LeviationSpell"),
+	FireBallSpell UMETA(DisplayName = "FireBallSpell"),
+	FireStormSpell UMETA(DisplayName = "FireStormSpell"),
+	SoulCleansingSpell UMETA(DisplayName = "SoulCleansingSpell")
+};
 
 UCLASS()
 class HARRYPOTTER_API ACPP_MagicWand : public AActor
@@ -35,9 +41,14 @@ public:
 
 	ACPP_FireStormSpell* FireStormRef;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	Spell CurrentSpell;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<Spell> ListOfSpells;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UParticleSystem* SoulCleansingParticle;
 
 public:
 	
@@ -49,15 +60,11 @@ public:
 	void UseFireStormSpell();
 	void StopUseFireStormSpell();
 
+	void UseSoulCleansingSpell(class ACPP_BaseAICharacter* TargetPawn);
+
 	void ChangeSpellUp();
 	void ChangeSpellDown();
 };
 
 
 
-enum Spell
-{
-	LeviationSpell,
-	FireBallSpell,
-	FireStormSpell
-};

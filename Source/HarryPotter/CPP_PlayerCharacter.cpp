@@ -17,6 +17,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/ArrowComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "CPP_BaseAICharacter.h"
 
 
 ACPP_PlayerCharacter::ACPP_PlayerCharacter()
@@ -79,6 +80,8 @@ ACPP_PlayerCharacter::ACPP_PlayerCharacter()
 	MaxStrength = 100.0f;
 
 	ManaRegenPerSecond = 3.0f;
+
+	PurityOfSoul = 0;
 }
 
 void ACPP_PlayerCharacter::BeginPlay()
@@ -125,7 +128,8 @@ void ACPP_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis(TEXT("MoveRight"), this, &ACPP_PlayerCharacter::MoveRight);
 	PlayerInputComponent->BindAxis(TEXT("LookUp"), this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis(TEXT("LookRight"), this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::JumpDash);
+	PlayerInputComponent->BindAction(TEXT("Jump"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::Jump);
+	PlayerInputComponent->BindAction(TEXT("Dash"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::Dash);
 	PlayerInputComponent->BindAction(TEXT("SwitchBattleMode"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::SwitchBattleMode);
 	PlayerInputComponent->BindAction(TEXT("UseMagic"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::UseMagic);
 	PlayerInputComponent->BindAction(TEXT("ChangeSpellUp"), EInputEvent::IE_Pressed, this, &ACPP_PlayerCharacter::ChangeSpellUp);
@@ -216,7 +220,7 @@ void ACPP_PlayerCharacter::MoveGrabbedObject()  // Update location of grabbed ob
 	}
 }
 
-void ACPP_PlayerCharacter::JumpDash()
+void ACPP_PlayerCharacter::Dash()
 {
 	if (bBattleMode && !bIsDashing && Mana - PlayerStateRef->DashSpell_Settings.ManaCost > 0)
 	{
@@ -295,19 +299,15 @@ void ACPP_PlayerCharacter::JumpDash()
 			Mana -= PlayerStateRef->DashSpell_Settings.ManaCost;
 		}
 	}
-	else
-	{
-		Jump();
-	}
 }
 
 void ACPP_PlayerCharacter::UseMagic()  // Choosing a spell to use
 {
 	if (bBattleMode && !bIsPlayingAnimation)
 	{
-		if (WandRef->CurrentSpell == Spell::LeviationSpell && Mana - PlayerStateRef->LeviationSpell_Settings.ManaCost > 0)
+		if (WandRef->CurrentSpell == Spell::LeviationSpell)
 		{
-			if (!bIsUsingLeviationSpell && LeviationSpell_Montage)
+			if (!bIsUsingLeviationSpell && LeviationSpell_Montage && Mana - PlayerStateRef->LeviationSpell_Settings.ManaCost > 0)
 			{
 				UseLeviationSpell();
 			}
@@ -336,9 +336,19 @@ void ACPP_PlayerCharacter::UseMagic()  // Choosing a spell to use
 			}
 			else
 			{
-				if (StopFireStormSpell_Montage && bIsUsingFireStormSpell)
+				if (StopFireStormSpell_Montage)
 				{
 					StopUseFireStormSpell();
+				}
+			}
+		}
+		else if (WandRef->CurrentSpell == Spell::SoulCleansingSpell)
+		{
+			if (!bIsUsingSoulCleansingSpell)
+			{
+				if (FireStormSpell_Montage)
+				{
+					UseSoulCleansingSpell();
 				}
 			}
 		}
@@ -413,6 +423,40 @@ void ACPP_PlayerCharacter::StopUseFireStormSpell()
 	WandRef->FireStormRef->LoopSoundRef->Stop();
 }
 
+void ACPP_PlayerCharacter::UseSoulCleansingSpell()
+{
+	FHitResult Hit;
+
+	FVector TraceStart = FollowCamera->GetComponentLocation();
+	FVector TraceEnd = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 1000.0f;  // Line from camera forward
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+
+	GetWorld()->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, ObjectParams, QueryParams);
+
+	if (Hit.GetActor() && Cast<ACPP_BaseAICharacter>(Hit.GetActor()) && Cast<ACPP_BaseAICharacter>(Hit.GetActor())->bIsDeath)
+	{
+		float AnimDuration = PlayAnimMontage(SoulCleansingSpell_Montage);
+
+		BeginPlay_Anim(AnimDuration, true);
+
+		WandRef->UseSoulCleansingSpell(Cast<ACPP_BaseAICharacter>(Hit.GetActor()));
+
+		if (SoulCleansingLoopSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, SoulCleansingLoopSound, GetActorLocation());
+
+			UGameplayStatics::PlaySoundAtLocation(this, SoulCleansingDestroyingSound, GetActorLocation());
+		}
+
+		PurityOfSoul++;
+	}
+}
+
 void ACPP_PlayerCharacter::EndPlay_Anim(bool bStopCharacter)
 {
 	if (bIsUsingFireStormSpell)  //When we use FireStormSpell we can't move
@@ -427,12 +471,18 @@ void ACPP_PlayerCharacter::EndPlay_Anim(bool bStopCharacter)
 
 void ACPP_PlayerCharacter::ChangeSpellUp()
 {
-	WandRef->ChangeSpellUp();
+	if (!bIsPlayingAnimation && !bIsUsingFireStormSpell && !bIsUsingLeviationSpell && !bIsUsingSoulCleansingSpell)
+	{
+		WandRef->ChangeSpellUp();
+	}
 }
 
 void ACPP_PlayerCharacter::ChangeSpellDown()
 {
-	WandRef->ChangeSpellDown();
+	if (!bIsPlayingAnimation && !bIsUsingFireStormSpell && !bIsUsingLeviationSpell && !bIsUsingSoulCleansingSpell)
+	{
+		WandRef->ChangeSpellDown();
+	}
 }
 
 void ACPP_PlayerCharacter::Death()

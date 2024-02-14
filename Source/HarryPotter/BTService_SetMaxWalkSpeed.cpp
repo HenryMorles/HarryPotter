@@ -27,6 +27,6 @@ void UBTService_SetMaxWalkSpeed::TickNode(UBehaviorTreeComponent& OwnerComp, uin
 	}
 	else
 	{
-		OwnerPawn->GetCharacterMovement()->MaxWalkSpeed = 0.0f;  //If some animation is played, the speed is set to 0
+		OwnerPawn->GetCharacterMovement()->MaxWalkSpeed = 0.0f;  //If some animation is played, the speed set to 0
 	}
 }

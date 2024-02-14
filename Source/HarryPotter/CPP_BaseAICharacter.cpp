@@ -9,6 +9,10 @@
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "BehaviorTree/BlackboardComponent.h"
+
 
 
 ACPP_BaseAICharacter::ACPP_BaseAICharacter()
@@ -46,14 +50,14 @@ void ACPP_BaseAICharacter::Death()
 {
 	Super::Death();
 
+	GetCharacterMovement()->MaxWalkSpeed = 0.0f;
+
 	if (Death_Montage && bIsDeath)
 	{
 		float AnimDuration = PlayAnimMontage(Death_Montage);
-		GetCharacterMovement()->MaxWalkSpeed = 0.0f;
-
-		FTimerHandle UnusedHandle;
-		GetWorldTimerManager().SetTimer(UnusedHandle, this, &ACPP_BaseAICharacter::DestroyCharacter, AnimDuration, false);  //After animation, destroy the character
 	}
+
+	Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsBool(FName("IsDeath"), true);
 }
 
 void ACPP_BaseAICharacter::OnHearNoise(APawn* OtherActor, const FVector& Location, float Volume)
@@ -103,8 +107,12 @@ void ACPP_BaseAICharacter::BeginOverlap(UPrimitiveComponent* OverlappedComponent
 	}
 }
 
-void ACPP_BaseAICharacter::DestroyCharacter()
+void ACPP_BaseAICharacter::CleansingCharacter()
 {
+	if (SoulCleansingParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(this, SoulCleansingParticle, GetActorLocation(), GetActorRotation(), FVector(2.5f, 2.5f, 2.5f));
+	}
 	Destroy();
 }
 

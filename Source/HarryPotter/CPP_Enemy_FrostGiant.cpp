@@ -14,5 +14,5 @@ ACPP_Enemy_FrostGiant::ACPP_Enemy_FrostGiant()
 
 	MaxHealth = 20;
 
-	Damage = 50.0f;
+	Damage = 40.0f;
 }

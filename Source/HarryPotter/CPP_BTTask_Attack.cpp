@@ -9,7 +9,7 @@
 
 UCPP_BTTask_Attack::UCPP_BTTask_Attack()
 {
-
+	NodeName = "Attack";
 }
 
 EBTNodeResult::Type UCPP_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -28,5 +28,5 @@ EBTNodeResult::Type UCPP_BTTask_Attack::ExecuteTask(UBehaviorTreeComponent& Owne
 		}
 	}
 
-	return EBTNodeResult::Type();
+	return EBTNodeResult::Succeeded;
 }

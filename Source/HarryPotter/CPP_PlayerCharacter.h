@@ -73,6 +73,9 @@ public:
 	class UAnimMontage* StopFireStormSpell_Montage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* SoulCleansingSpell_Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USceneComponent* ForwardDashPoint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -116,6 +119,9 @@ public:
 	bool bIsUsingFireStormSpell;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsUsingSoulCleansingSpell;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsDashing;
 
 	UPROPERTY(EditAnywhere)
@@ -133,11 +139,21 @@ public:
 	UPROPERTY(EditAnywhere)
 	USoundBase* DashSound;
 
+	UPROPERTY(EditAnywhere)
+	USoundBase* SoulCleansingLoopSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* SoulCleansingDestroyingSound;
+
 	class ACPP_PlayerState* PlayerStateRef;
 
 	float ManaRegenPerSecond;
 
 	UPrimitiveComponent* GrabbedComponentRef;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int PurityOfSoul;
+
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)override;
 
@@ -150,7 +166,7 @@ private:
 
 	void MoveGrabbedObject();
 
-	void JumpDash();
+	void Dash();
 
 public:
 
@@ -163,6 +179,8 @@ public:
 
 	void UseFireStormSpell();
 	void StopUseFireStormSpell();
+
+	void UseSoulCleansingSpell();
 
 	void ChangeSpellUp();
 	void ChangeSpellDown();

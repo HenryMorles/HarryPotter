@@ -13,6 +13,7 @@
 #include "CPP_FireStormSpell.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CPP_PlayerState.h"
+#include "CPP_BaseAICharacter.h"
 
 
 // Sets default values
@@ -32,6 +33,7 @@ ACPP_MagicWand::ACPP_MagicWand()
 	ListOfSpells.Add(Spell::LeviationSpell);
 	ListOfSpells.Add(Spell::FireBallSpell);
 	ListOfSpells.Add(Spell::FireStormSpell);
+	ListOfSpells.Add(Spell::SoulCleansingSpell);
 }
 
 void ACPP_MagicWand::UseLeviationSpell()
@@ -149,6 +151,22 @@ void ACPP_MagicWand::StopUseFireStormSpell()
 	}
 }
 
+void ACPP_MagicWand::UseSoulCleansingSpell(ACPP_BaseAICharacter* TargetPawn)
+{
+	if (TargetPawn)
+	{
+		UParticleSystemComponent* TempParticleRef;
+
+		if (SoulCleansingParticle)
+		{
+			TempParticleRef = UGameplayStatics::SpawnEmitterAtLocation(this, SoulCleansingParticle, TargetPawn->GetActorLocation(), FRotator(180.0f, 0.0f, 0.0f), FVector(2.5f, 2.5f, 2.5f));
+		}
+
+		FTimerHandle UnusedHandle;
+		GetWorldTimerManager().SetTimer(UnusedHandle, TargetPawn, &ACPP_BaseAICharacter::CleansingCharacter, 2.5f, false);
+	}
+}
+
 void ACPP_MagicWand::ChangeSpellUp()
 {
 	int32 NumTargetSpell = ListOfSpells.Find(CurrentSpell) + 1;
@@ -160,15 +178,6 @@ void ACPP_MagicWand::ChangeSpellUp()
 	{
 		CurrentSpell = ListOfSpells[0];
 	}
-
-	if (CurrentSpell == Spell::LeviationSpell)
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Leviation"));
-
-	else if (CurrentSpell == Spell::FireBallSpell)
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire"));
-
-	else if (CurrentSpell == Spell::FireStormSpell)
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire Storm"));
 }
 
 void ACPP_MagicWand::ChangeSpellDown()
@@ -182,13 +191,4 @@ void ACPP_MagicWand::ChangeSpellDown()
 	{
 		CurrentSpell = ListOfSpells[ListOfSpells.Num() - 1];
 	}
-
-	if (CurrentSpell == Spell::LeviationSpell)
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Leviation"));
-
-	else if (CurrentSpell == Spell::FireBallSpell)
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire"));
-
-	else if (CurrentSpell == Spell::FireStormSpell)
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, TEXT("Fire Storm"));
 }
