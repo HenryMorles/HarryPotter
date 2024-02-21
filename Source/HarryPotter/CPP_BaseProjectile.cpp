@@ -39,7 +39,7 @@ void ACPP_BaseProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	if (OtherActor && OtherActor != this && OtherActor != GetOwner())
 	{
 		FVector ShotDirection;
-		FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
+		FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, DamageClassEvent);
 		OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this->GetOwner()->GetOwner());
 
 		if (HitParticles)

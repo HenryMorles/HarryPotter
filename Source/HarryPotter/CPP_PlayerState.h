@@ -45,6 +45,7 @@ public:
 	SpellSettings FireBallSpell_Settings;
 	SpellSettings FireStormSpell_Settings;
 	SpellSettings DashSpell_Settings;
+	SpellSettings CuttingSpell_Settings;
 };
 
 

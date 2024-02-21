@@ -76,6 +76,9 @@ public:
 	class UAnimMontage* SoulCleansingSpell_Montage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* CuttingSpell_Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USceneComponent* ForwardDashPoint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -145,15 +148,29 @@ public:
 	UPROPERTY(EditAnywhere)
 	USoundBase* SoulCleansingDestroyingSound;
 
+	UPROPERTY(EditAnywhere)
+	USoundBase* SealCreatureLoopSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* SealCreatureDestroyingSound;
+
+	UPROPERTY(EditAnywhere)
+	USoundBase* CuttingSpellLaunchSound;
+
 	class ACPP_PlayerState* PlayerStateRef;
 
+	class ACPP_BaseAICharacter* SealedCharacterRef;
+
 	float ManaRegenPerSecond;
+
+	float HealthRegenPerSecond;
+
+	float StrengthRegenPerSecond;
 
 	UPrimitiveComponent* GrabbedComponentRef;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int PurityOfSoul;
-
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)override;
 
@@ -182,12 +199,18 @@ public:
 
 	void UseSoulCleansingSpell();
 
+	void UseSealCreatureSpell();
+
+	void UseCuttingSpell();
+
 	void ChangeSpellUp();
 	void ChangeSpellDown();
 
 	void Death()override;
 
-	void ManaRegen();
+	bool UseMana(float ManaCost);
+
+	void StatsRegen();
 
 	void EndDash();
 

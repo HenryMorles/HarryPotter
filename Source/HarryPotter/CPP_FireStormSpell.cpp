@@ -35,7 +35,7 @@ void ACPP_FireStormSpell::BeginPlay()
 		MyTimeline->AddInterpFloat(CurveFloat, InterpFunction, FName("Alpha"));
 
 		StartScale = FVector(0.0f, 0.0f, 0.0f);
-		EndScale = FVector(15.0f, 15.0f, 2.0f);
+		EndScale = FVector(30.0f, 30.0f, 3.0f);
 
 		MyTimeline->SetLooping(false);
 		MyTimeline->SetIgnoreTimeDilation(true);
@@ -56,7 +56,7 @@ void ACPP_FireStormSpell::Tick(float DeltaTime)  // Tick Interval = 0.1f;  Every
 
 	if (PlayerRef && PlayerRef->bIsUsingFireStormSpell)
 	{
-		if (PlayerRef->Mana - PlayerRef->PlayerStateRef->FireBallSpell_Settings.ManaCost > 0)
+		if (PlayerRef->UseMana(PlayerRef->PlayerStateRef->FireBallSpell_Settings.ManaCost))
 		{
 			TArray<AActor*> OverlappingActors;
 
@@ -64,9 +64,7 @@ void ACPP_FireStormSpell::Tick(float DeltaTime)  // Tick Interval = 0.1f;  Every
 
 			FHitResult Hit;
 			FVector ShotDirection;
-			FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, nullptr);
-
-			PlayerRef->Mana -= PlayerRef->PlayerStateRef->FireStormSpell_Settings.ManaCost;
+			FPointDamageEvent DamageEvent(Damage, Hit, ShotDirection, DamageClassEvent);
 
 			for (AActor* OverlappingActor : OverlappingActors)
 			{

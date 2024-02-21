@@ -34,6 +34,8 @@ ACPP_MagicWand::ACPP_MagicWand()
 	ListOfSpells.Add(Spell::FireBallSpell);
 	ListOfSpells.Add(Spell::FireStormSpell);
 	ListOfSpells.Add(Spell::SoulCleansingSpell);
+	ListOfSpells.Add(Spell::SealCreature);
+	ListOfSpells.Add(Spell::CuttingSpell);
 }
 
 void ACPP_MagicWand::UseLeviationSpell()
@@ -86,7 +88,7 @@ void ACPP_MagicWand::UseFireBallSpell()
 {
 	ACPP_PlayerCharacter* OwnerRef = Cast<ACPP_PlayerCharacter>(GetOwner());
 
-	if (OwnerRef && OwnerRef->Mana - OwnerRef->PlayerStateRef->FireBallSpell_Settings.ManaCost > 0)
+	if (OwnerRef && OwnerRef->UseMana(OwnerRef->PlayerStateRef->FireBallSpell_Settings.ManaCost))
 	{
 		FHitResult Hit;
 
@@ -120,8 +122,6 @@ void ACPP_MagicWand::UseFireBallSpell()
 
 		ACPP_BaseProjectile* Projectile = GetWorld()->SpawnActor<ACPP_BaseProjectile>(FireBallClass, Location, Rotation);
 		Projectile->SetOwner(this);
-
-		OwnerRef->Mana -= OwnerRef->PlayerStateRef->FireBallSpell_Settings.ManaCost;
 	}
 }
 
@@ -151,19 +151,85 @@ void ACPP_MagicWand::StopUseFireStormSpell()
 	}
 }
 
+void ACPP_MagicWand::UseCuttingSpell()
+{
+	ACPP_PlayerCharacter* OwnerRef = Cast<ACPP_PlayerCharacter>(GetOwner());
+
+	if (OwnerRef && OwnerRef->UseMana(OwnerRef->PlayerStateRef->CuttingSpell_Settings.ManaCost))
+	{
+		FHitResult Hit;
+
+		FVector TraceStart = OwnerRef->FollowCamera->GetComponentLocation();
+		FVector TraceEnd = OwnerRef->FollowCamera->GetComponentLocation() + OwnerRef->FollowCamera->GetForwardVector() * 10000.0f;
+
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+		QueryParams.AddIgnoredActor(OwnerRef);
+
+		FCollisionObjectQueryParams ObjectParams;
+		ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel1);
+		ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_GameTraceChannel2);
+		ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldDynamic);
+		ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_WorldStatic);
+		ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+
+		FVector Location = SpellSpawnPoint->GetComponentLocation();
+		GetWorld()->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, ObjectParams, QueryParams);
+
+		FRotator Rotation;
+
+		if (Hit.GetActor())  // If I hit an actor, the projectile will fly to the Hit.Location
+		{
+			Rotation = UKismetMathLibrary::FindLookAtRotation(SpellSpawnPoint->GetComponentLocation(), Hit.Location);
+		}
+		else
+		{
+			Rotation = UKismetMathLibrary::FindLookAtRotation(SpellSpawnPoint->GetComponentLocation(), OwnerRef->FollowCamera->GetComponentLocation() + OwnerRef->FollowCamera->GetForwardVector() * 10000.0f);
+		}
+
+		ACPP_BaseProjectile* Projectile = GetWorld()->SpawnActor<ACPP_BaseProjectile>(CuttingSpellClass, Location, Rotation);
+		Projectile->SetOwner(this);
+	}
+}
+
 void ACPP_MagicWand::UseSoulCleansingSpell(ACPP_BaseAICharacter* TargetPawn)
 {
 	if (TargetPawn)
 	{
-		UParticleSystemComponent* TempParticleRef;
-
 		if (SoulCleansingParticle)
 		{
-			TempParticleRef = UGameplayStatics::SpawnEmitterAtLocation(this, SoulCleansingParticle, TargetPawn->GetActorLocation(), FRotator(180.0f, 0.0f, 0.0f), FVector(2.5f, 2.5f, 2.5f));
+			UGameplayStatics::SpawnEmitterAtLocation(this, SoulCleansingParticle, TargetPawn->GetActorLocation(), FRotator(180.0f, 0.0f, 0.0f), FVector(2.5f, 2.5f, 2.5f));
 		}
 
 		FTimerHandle UnusedHandle;
 		GetWorldTimerManager().SetTimer(UnusedHandle, TargetPawn, &ACPP_BaseAICharacter::CleansingCharacter, 2.5f, false);
+	}
+}
+
+void ACPP_MagicWand::UseSealCreatureSpell(ACPP_BaseAICharacter* TargetPawn)
+{
+	if (TargetPawn)
+	{
+		if (SoulCleansingParticle)
+		{
+			FVector SpawnLocation = TargetPawn->GetMesh()->GetComponentLocation();
+
+			FTimerHandle UnusedHandle;
+			FTimerDelegate Delegate = FTimerDelegate::CreateUObject(this, &ACPP_MagicWand::SpawnSealParticles, TargetPawn, SpawnLocation);
+
+			GetWorldTimerManager().SetTimer(UnusedHandle, Delegate, 2.0f, false);
+		}
+
+		FTimerHandle UnusedHandle;
+		GetWorldTimerManager().SetTimer(UnusedHandle, TargetPawn, &ACPP_BaseAICharacter::SealCharacter, 2.5f, false);
+	}
+}
+
+void ACPP_MagicWand::SpawnSealParticles(ACPP_BaseAICharacter* TargetPawn, FVector SpawnLocation)
+{
+	if (!TargetPawn->bIsSealed)
+	{
+		TargetPawn->SealCreatureParticleRef = UGameplayStatics::SpawnEmitterAtLocation(TargetPawn, SealCreatureParticle, FVector(SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z + 5), FRotator(180.0f, 0.0f, 0.0f), FVector(3.0f, 3.0f, 3.0f));
 	}
 }
 

@@ -18,6 +18,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	float Damage;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UDamageType> DamageClassEvent;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

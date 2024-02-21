@@ -12,7 +12,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "BehaviorTree/BlackboardComponent.h"
-
+#include "Components/WidgetComponent.h"
 
 
 ACPP_BaseAICharacter::ACPP_BaseAICharacter()
@@ -30,9 +30,11 @@ ACPP_BaseAICharacter::ACPP_BaseAICharacter()
 
 	Damage = 0.0f;
 
+	bIsPlayerControlled = false;
+
 	bIsDamageApplied = false;
 
-	bIsPlayerControlled = false;
+	bIsSealed = false;
 }
 
 void ACPP_BaseAICharacter::BeginPlay()
@@ -44,20 +46,45 @@ void ACPP_BaseAICharacter::BeginPlay()
 
 	AttackColision_1->OnComponentBeginOverlap.AddDynamic(this, &ACPP_BaseAICharacter::BeginOverlap);
 	AttackColision_2->OnComponentBeginOverlap.AddDynamic(this, &ACPP_BaseAICharacter::BeginOverlap);
+
+	AttackColision_1->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackColision_2->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ACPP_BaseAICharacter::Death()
 {
-	Super::Death();
-
-	GetCharacterMovement()->MaxWalkSpeed = 0.0f;
-
-	if (Death_Montage && bIsDeath)
+	if (bIsDeath)
 	{
-		float AnimDuration = PlayAnimMontage(Death_Montage);
+		if (SealCreatureParticleRef)
+		{
+			SealCreatureParticleRef->Deactivate();
+		}
+
+		ACPP_PlayerCharacter* PlayerRef = Cast<ACPP_PlayerCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+
+		PlayerRef->PurityOfSoul--;
+
+		if (bIsSealed)
+		{
+			Cast<ACPP_PlayerCharacter>(GetOwner())->SealedCharacterRef = nullptr;
+		}
+
+		Destroy();
 	}
 
-	Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsBool(FName("IsDeath"), true);
+	else
+	{
+		Super::Death();
+
+		GetCharacterMovement()->MaxWalkSpeed = 0.0f;
+
+		if (Death_Montage && bIsDeath)
+		{
+			float AnimDuration = PlayAnimMontage(Death_Montage);
+		}
+
+		Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsBool(FName("IsDeath"), true);
+	}
 }
 
 void ACPP_BaseAICharacter::OnHearNoise(APawn* OtherActor, const FVector& Location, float Volume)
@@ -73,28 +100,47 @@ void ACPP_BaseAICharacter::OnSeePawn(APawn* OtherPawn)
 	}
 }
 
-void ACPP_BaseAICharacter::Attack(APawn* TargetPawn)
+float ACPP_BaseAICharacter::Attack(APawn* TargetPawn)
 {
-	if (Attack_Montage && !bIsDeath && !bIsPlayingAnimation)
+	if (Attack_Montage_1 && !bIsDeath && !bIsPlayingAnimation)
 	{
-		float AnimDuration = PlayAnimMontage(Attack_Montage);
+		float AnimDuration = PlayAttackMontage();
 
 		BeginPlay_Anim(AnimDuration, true);
+
+		return AnimDuration;
 	}
+
+	return 0.0f;
+}
+
+void ACPP_BaseAICharacter::BeginPlay_Anim(float AnimDuration, bool bStopCharacter)
+{
+	Super::BeginPlay_Anim(AnimDuration, bStopCharacter);
+
+	Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsBool(FName("IsPlayingAnimation"), true);
 }
 
 void ACPP_BaseAICharacter::EndPlay_Anim(bool bStopCharacter)
 {
-	Super::EndPlay_Anim(bStopCharacter);
+	if (!GetCurrentMontage())
+	{
+		Super::EndPlay_Anim(bStopCharacter);
 
-	bIsDamageApplied = false;
+		AttackColision_1->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		AttackColision_2->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		bIsDamageApplied = false;
+
+		Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->ClearValue(FName("IsPlayingAnimation"));
+	}
 }
 
 void ACPP_BaseAICharacter::BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!bIsDamageApplied && bIsPlayingAnimation && OtherActor && OtherActor != this)
+	if (bIsPlayingAnimation && OtherActor && OtherActor != this)
 	{
-		if ((Cast<ACPP_BaseAICharacter>(OtherActor) && Cast<ACPP_BaseAICharacter>(OtherActor)->bIsPlayerControlled) || Cast<ACPP_PlayerCharacter>(OtherActor))
+		if ((Cast<ACPP_BaseAICharacter>(OtherActor) && (Cast<ACPP_BaseAICharacter>(OtherActor)->bIsPlayerControlled) || Cast<ACPP_PlayerCharacter>(OtherActor)))
 		{
 			FHitResult Hit;
 			FVector ShotDirection;
@@ -102,7 +148,7 @@ void ACPP_BaseAICharacter::BeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 			OtherActor->TakeDamage(Damage, DamageEvent, nullptr, this);
 
-			bIsDamageApplied = true;  // Damage can only be dealt once per animation, so this variable will prevent it from begin dealt again
+			bIsDamageApplied = true;
 		}
 	}
 }
@@ -113,7 +159,34 @@ void ACPP_BaseAICharacter::CleansingCharacter()
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(this, SoulCleansingParticle, GetActorLocation(), GetActorRotation(), FVector(2.5f, 2.5f, 2.5f));
 	}
+
 	Destroy();
+}
+
+float ACPP_BaseAICharacter::PlayAttackMontage()
+{
+	return PlayAnimMontage(Attack_Montage_1);
+}
+
+void ACPP_BaseAICharacter::SealCharacter()
+{
+	if (!bIsSealed)
+	{
+		bIsSealed = true;
+
+		Health = MaxHealth;
+	}
+	else
+	{
+		bIsDeath = true;
+
+		if (bIsSealed)
+		{
+			Cast<ACPP_PlayerCharacter>(GetOwner())->SealedCharacterRef = nullptr;
+		}
+
+		Death();
+	}
 }
 
 void ACPP_BaseAICharacter::NoticedPawn(APawn* OtherPawn)

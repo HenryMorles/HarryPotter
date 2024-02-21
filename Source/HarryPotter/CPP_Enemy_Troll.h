@@ -14,4 +14,14 @@ class HARRYPOTTER_API ACPP_Enemy_Troll : public ACPP_BaseEnemy
 {
 	GENERATED_BODY()
 	
+public:
+
+	ACPP_Enemy_Troll();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* Attack_Montage_2;
+
+public:
+
+	virtual float PlayAttackMontage();
 };

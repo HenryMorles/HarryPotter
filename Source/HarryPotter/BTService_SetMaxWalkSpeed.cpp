@@ -19,6 +19,7 @@ UBTService_SetMaxWalkSpeed::UBTService_SetMaxWalkSpeed()
 void UBTService_SetMaxWalkSpeed::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
+
 	ACPP_BaseAICharacter* OwnerPawn = Cast<ACPP_BaseAICharacter>(OwnerComp.GetAIOwner()->GetPawn());
 
 	if (!OwnerPawn->bIsPlayingAnimation && !OwnerPawn->bIsDeath)

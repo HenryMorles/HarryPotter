@@ -18,4 +18,10 @@ public:
 
 	ACPP_Enemy_FrostGiant();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UAnimMontage* Attack_Montage_2;
+
+public:
+
+	virtual float PlayAttackMontage();
 };

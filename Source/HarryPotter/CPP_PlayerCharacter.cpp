@@ -72,6 +72,8 @@ ACPP_PlayerCharacter::ACPP_PlayerCharacter()
 	DashParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("DashParticle"));
 	DashParticle->SetupAttachment(RootComponent);
 
+	SealedCharacterRef = nullptr;
+
 	bIsUsingLeviationSpell = false;
 	bIsUsingFireStormSpell = false;
 
@@ -80,6 +82,7 @@ ACPP_PlayerCharacter::ACPP_PlayerCharacter()
 	MaxStrength = 100.0f;
 
 	ManaRegenPerSecond = 3.0f;
+	HealthRegenPerSecond = 1.0;
 
 	PurityOfSoul = 0;
 }
@@ -99,7 +102,7 @@ void ACPP_PlayerCharacter::BeginPlay()
 	GetWorldTimerManager().SetTimer(UnusedHandle, this, &ACPP_PlayerCharacter::MoveGrabbedObject, 0.1f, true);
 
 	FTimerHandle UnusedHandle1;
-	GetWorldTimerManager().SetTimer(UnusedHandle1, this, &ACPP_PlayerCharacter::ManaRegen, 1.0f, true);
+	GetWorldTimerManager().SetTimer(UnusedHandle1, this, &ACPP_PlayerCharacter::StatsRegen, 1.0f, true);
 
 	DashParticle->Deactivate();
 
@@ -204,11 +207,7 @@ void ACPP_PlayerCharacter::MoveGrabbedObject()  // Update location of grabbed ob
 		PhysicsHandle->SetTargetLocation(GrabPoint->GetComponentLocation());
 		PhysicsHandle->GrabbedComponent->AddImpulse(FVector(0.0f, 0.0f, 0.0f));
 
-		if (Mana - PlayerStateRef->LeviationSpell_Settings.ManaCost > 0)
-		{
-			Mana -= PlayerStateRef->LeviationSpell_Settings.ManaCost;
-		}
-		else
+		if (!UseMana(PlayerStateRef->LeviationSpell_Settings.ManaCost))
 		{
 			float AnimDuration = PlayAnimMontage(StopLeviationSpell_Montage);
 			bIsUsingLeviationSpell = false;
@@ -222,7 +221,7 @@ void ACPP_PlayerCharacter::MoveGrabbedObject()  // Update location of grabbed ob
 
 void ACPP_PlayerCharacter::Dash()
 {
-	if (bBattleMode && !bIsDashing && Mana - PlayerStateRef->DashSpell_Settings.ManaCost > 0)
+	if (bBattleMode && !bIsDashing && UseMana(PlayerStateRef->DashSpell_Settings.ManaCost))
 	{
 		FVector PlayerDirection = UKismetMathLibrary::InverseTransformDirection(GetActorTransform(), GetVelocity());
 
@@ -241,8 +240,6 @@ void ACPP_PlayerCharacter::Dash()
 			{
 				UGameplayStatics::PlaySoundAtLocation(this, DashSound, GetActorLocation());
 			}
-
-			Mana -= PlayerStateRef->DashSpell_Settings.ManaCost;
 		}
 		else if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("S")))
 		{
@@ -259,8 +256,6 @@ void ACPP_PlayerCharacter::Dash()
 			{
 				UGameplayStatics::PlaySoundAtLocation(this, DashSound, GetActorLocation());
 			}
-
-			Mana -= PlayerStateRef->DashSpell_Settings.ManaCost;
 		}
 		else if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("A")))
 		{
@@ -277,8 +272,6 @@ void ACPP_PlayerCharacter::Dash()
 			{
 				UGameplayStatics::PlaySoundAtLocation(this, DashSound, GetActorLocation());
 			}
-
-			Mana -= PlayerStateRef->DashSpell_Settings.ManaCost;
 		}
 		else if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(FKey("D")))
 		{
@@ -295,8 +288,6 @@ void ACPP_PlayerCharacter::Dash()
 			{
 				UGameplayStatics::PlaySoundAtLocation(this, DashSound, GetActorLocation());
 			}
-
-			Mana -= PlayerStateRef->DashSpell_Settings.ManaCost;
 		}
 	}
 }
@@ -307,7 +298,7 @@ void ACPP_PlayerCharacter::UseMagic()  // Choosing a spell to use
 	{
 		if (WandRef->CurrentSpell == Spell::LeviationSpell)
 		{
-			if (!bIsUsingLeviationSpell && LeviationSpell_Montage && Mana - PlayerStateRef->LeviationSpell_Settings.ManaCost > 0)
+			if (!bIsUsingLeviationSpell && LeviationSpell_Montage && UseMana(PlayerStateRef->LeviationSpell_Settings.ManaCost))
 			{
 				UseLeviationSpell();
 			}
@@ -346,10 +337,27 @@ void ACPP_PlayerCharacter::UseMagic()  // Choosing a spell to use
 		{
 			if (!bIsUsingSoulCleansingSpell)
 			{
-				if (FireStormSpell_Montage)
+				if (SoulCleansingSpell_Montage)
 				{
 					UseSoulCleansingSpell();
 				}
+			}
+		}
+		else if (WandRef->CurrentSpell == Spell::SealCreature)
+		{
+			if (!bIsUsingSoulCleansingSpell)
+			{
+				if (SoulCleansingSpell_Montage)
+				{
+					UseSealCreatureSpell();
+				}
+			}
+		}
+		else if (WandRef->CurrentSpell == Spell::CuttingSpell)
+		{
+			if (CuttingSpell_Montage)
+			{
+				UseCuttingSpell();
 			}
 		}
 	}
@@ -446,7 +454,7 @@ void ACPP_PlayerCharacter::UseSoulCleansingSpell()
 
 		WandRef->UseSoulCleansingSpell(Cast<ACPP_BaseAICharacter>(Hit.GetActor()));
 
-		if (SoulCleansingLoopSound)
+		if (SoulCleansingLoopSound && SoulCleansingDestroyingSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, SoulCleansingLoopSound, GetActorLocation());
 
@@ -455,6 +463,54 @@ void ACPP_PlayerCharacter::UseSoulCleansingSpell()
 
 		PurityOfSoul++;
 	}
+}
+
+void ACPP_PlayerCharacter::UseSealCreatureSpell()
+{
+	FHitResult Hit;
+
+	FVector TraceStart = FollowCamera->GetComponentLocation();
+	FVector TraceEnd = FollowCamera->GetComponentLocation() + FollowCamera->GetForwardVector() * 1000.0f;  // Line from camera forward
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECollisionChannel::ECC_Pawn);
+
+	GetWorld()->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, ObjectParams, QueryParams);
+
+	if (Hit.GetActor() && Cast<ACPP_BaseAICharacter>(Hit.GetActor()) && Cast<ACPP_BaseAICharacter>(Hit.GetActor())->bIsDeath)
+	{
+		float AnimDuration = PlayAnimMontage(SoulCleansingSpell_Montage);
+
+		BeginPlay_Anim(AnimDuration, true);
+
+		WandRef->UseSealCreatureSpell(Cast<ACPP_BaseAICharacter>(Hit.GetActor()));
+
+		if (SealCreatureLoopSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, SealCreatureLoopSound, GetActorLocation());
+		}
+
+		PurityOfSoul -= 5;
+
+		SealedCharacterRef = Cast<ACPP_BaseAICharacter>(Hit.GetActor());
+		SealedCharacterRef->SetOwner(this);
+	}
+}
+
+void ACPP_PlayerCharacter::UseCuttingSpell()
+{
+	float AnimDuration = PlayAnimMontage(CuttingSpell_Montage) - 0.3f;
+
+	BeginPlay_Anim(AnimDuration, false);
+
+	FTimerHandle UnusedHandle;
+	GetWorldTimerManager().SetTimer(UnusedHandle, WandRef, &ACPP_MagicWand::UseCuttingSpell, AnimDuration / 2 - 0.3f, false);
+
+	//UGameplayStatics::PlaySoundAtLocation(this, CuttingSpellLaunchSound, GetActorLocation(), 1.0f, 1.0f, 1.2f);
+	UGameplayStatics::PlaySoundAtLocation(this, CuttingSpellLaunchSound, GetActorLocation(), 1.0f, 1.0f, 0.0f);
 }
 
 void ACPP_PlayerCharacter::EndPlay_Anim(bool bStopCharacter)
@@ -490,19 +546,85 @@ void ACPP_PlayerCharacter::Death()
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Death")));
 }
 
-void ACPP_PlayerCharacter::ManaRegen()
+bool ACPP_PlayerCharacter::UseMana(float ManaCost)
 {
-	if (!bIsUsingLeviationSpell && !bIsUsingFireStormSpell && !bIsPlayingAnimation)
+	if (SealedCharacterRef)
 	{
-		if (Mana + ManaRegenPerSecond < MaxMana)
+		FHitResult Hit;
+		FVector ShotDirection;
+		FPointDamageEvent DamageEvent(ManaCost / 10, Hit, ShotDirection, nullptr);
+
+		SealedCharacterRef->TakeDamage(ManaCost / 10, DamageEvent, nullptr, this->GetOwner()->GetOwner());
+
+		return true;
+	}
+
+	else if (Mana - ManaCost > 0)
+	{
+		Mana -= ManaCost;
+
+		MaxMana += ManaCost / 100;
+
+		return true;
+	}
+
+	else if (Health - (ManaCost / 10) > 1)   // If mana == 0 then we use HP to cast spell. In this case we spend less HP then mana
+	{
+		Mana = 0.0f;
+
+		Health -= (ManaCost / 10);
+
+		if (MaxHealth > 50.0f)
 		{
-			Mana += ManaRegenPerSecond;
+			MaxHealth -= ManaCost / 1000;
+		}
+
+		return true;
+	}
+
+	else
+	{
+		return false;
+	}
+}
+
+void ACPP_PlayerCharacter::StatsRegen()
+{
+	if (Health < MaxHealth)
+	{
+		if (Health + HealthRegenPerSecond < MaxHealth)
+		{
+			Health += HealthRegenPerSecond;
 		}
 		else
 		{
-			Mana = MaxMana;
+			Health = MaxHealth;
 		}
 	}
+	else if (Mana < MaxMana || Strength < MaxStrength)
+	{
+		if (!bIsUsingLeviationSpell && !bIsUsingFireStormSpell && !bIsPlayingAnimation)
+		{
+			if (Mana + ManaRegenPerSecond < MaxMana)
+			{
+				Mana += ManaRegenPerSecond;
+			}
+			else
+			{
+				Mana = MaxMana;
+			}
+
+			if (Strength + StrengthRegenPerSecond < MaxStrength)
+			{
+				Strength += StrengthRegenPerSecond;
+			}
+			else
+			{
+				Strength = MaxStrength;
+			}
+		}
+	}
+
 }
 
 void ACPP_PlayerCharacter::EndDash()

@@ -12,7 +12,9 @@ enum class Spell : uint8
 	LeviationSpell UMETA(DisplayName = "LeviationSpell"),
 	FireBallSpell UMETA(DisplayName = "FireBallSpell"),
 	FireStormSpell UMETA(DisplayName = "FireStormSpell"),
-	SoulCleansingSpell UMETA(DisplayName = "SoulCleansingSpell")
+	SoulCleansingSpell UMETA(DisplayName = "SoulCleansingSpell"),
+	SealCreature UMETA(DisplayName = "SealCreature"),
+	CuttingSpell UMETA(DisplayName = "CuttingSpell")
 };
 
 UCLASS()
@@ -37,6 +39,9 @@ public:
 	TSubclassOf<class ACPP_BaseProjectile> FireBallClass;
 
 	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<ACPP_BaseProjectile> CuttingSpellClass;
+
+	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<class ACPP_FireStormSpell> FireStormClass;
 
 	ACPP_FireStormSpell* FireStormRef;
@@ -50,6 +55,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UParticleSystem* SoulCleansingParticle;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UParticleSystem* SealCreatureParticle;
+
 public:
 	
 	void UseLeviationSpell();
@@ -60,7 +68,12 @@ public:
 	void UseFireStormSpell();
 	void StopUseFireStormSpell();
 
+	void UseCuttingSpell();
+
 	void UseSoulCleansingSpell(class ACPP_BaseAICharacter* TargetPawn);
+
+	void UseSealCreatureSpell(class ACPP_BaseAICharacter* TargetPawn);
+	void SpawnSealParticles(ACPP_BaseAICharacter* TargetPawn, FVector SpawnLocation);
 
 	void ChangeSpellUp();
 	void ChangeSpellDown();

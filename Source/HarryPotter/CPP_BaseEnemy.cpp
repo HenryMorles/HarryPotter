@@ -19,7 +19,10 @@ float ACPP_BaseEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 {
 	float DamageApplied = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	NoticedPawn(Cast<APawn>(DamageCauser));
+	if (!BurningTypeSettings.bIsApplied)
+	{
+		NoticedPawn(Cast<APawn>(DamageCauser));
+	}
 
 	return DamageApplied;
 }
@@ -51,10 +54,16 @@ void ACPP_BaseEnemy::OnSeePawn(APawn* OtherPawn)
 
 void ACPP_BaseEnemy::NoticedPawn(APawn* OtherPawn)
 {
-	Super::NoticedPawn(OtherPawn);
-
-	if (OtherPawn)
+	if (!bIsDeath)
 	{
-		Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsObject(FName("TargetCharacter"), OtherPawn);
+		Super::NoticedPawn(OtherPawn);
+
+		if (OtherPawn)
+		{
+			if (Cast<ACPP_AIController>(GetController()))
+			{
+				Cast<ACPP_AIController>(GetController())->GetBlackboardComponent()->SetValueAsObject(FName("TargetCharacter"), OtherPawn);
+			}
+		}
 	}
 }

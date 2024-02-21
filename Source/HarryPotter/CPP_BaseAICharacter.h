@@ -22,7 +22,7 @@ public:
 	class UPawnSensingComponent* PawnSensor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	class UAnimMontage* Attack_Montage;
+	class UAnimMontage* Attack_Montage_1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UAnimMontage* Death_Montage;
@@ -41,7 +41,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UParticleSystem* SoulCleansingParticle;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UParticleSystem* HitFloorParticle;
+
 	bool bIsPlayerControlled;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsSealed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UParticleSystemComponent* SealCreatureParticleRef;
 
 protected:
 	// Called when the game starts or when spawned
@@ -61,7 +70,9 @@ public:
 	virtual void OnSeePawn(APawn* OtherPawn);
 
 	UFUNCTION()
-	void Attack(APawn* TargetPawn);
+	float Attack(APawn* TargetPawn);
+
+	virtual void BeginPlay_Anim(float AnimDuration, bool bStopCharacter);
 
 	virtual void EndPlay_Anim(bool bStopCharacter)override;
 
@@ -69,6 +80,10 @@ public:
 	void BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	void CleansingCharacter();
+
+	virtual float PlayAttackMontage();
+
+	void SealCharacter();
 
 	virtual void NoticedPawn(APawn* OtherPawn);
 };
