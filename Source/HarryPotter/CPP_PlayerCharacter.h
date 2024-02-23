@@ -206,7 +206,7 @@ public:
 	void ChangeSpellUp();
 	void ChangeSpellDown();
 
-	void Death()override;
+	void Death(AActor* KillerRef)override;
 
 	bool UseMana(float ManaCost);
 

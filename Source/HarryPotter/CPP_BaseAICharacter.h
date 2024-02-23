@@ -61,7 +61,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UBehaviorTree* AIBehavior;
 
-	virtual void Death()override;
+	virtual void Death(AActor* KillerRef)override;
 
 	UFUNCTION()
 	void OnHearNoise(APawn* OtherActor, const FVector& Location, float Volume);

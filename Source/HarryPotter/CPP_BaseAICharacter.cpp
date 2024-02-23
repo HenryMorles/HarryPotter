@@ -51,7 +51,7 @@ void ACPP_BaseAICharacter::BeginPlay()
 	AttackColision_2->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void ACPP_BaseAICharacter::Death()
+void ACPP_BaseAICharacter::Death(AActor* KillerRef)
 {
 	if (bIsDeath)
 	{
@@ -62,7 +62,10 @@ void ACPP_BaseAICharacter::Death()
 
 		ACPP_PlayerCharacter* PlayerRef = Cast<ACPP_PlayerCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 
-		PlayerRef->PurityOfSoul--;
+		if (PlayerRef == KillerRef)
+		{
+			PlayerRef->PurityOfSoul--;
+		}
 
 		if (bIsSealed)
 		{
@@ -74,7 +77,7 @@ void ACPP_BaseAICharacter::Death()
 
 	else
 	{
-		Super::Death();
+		Super::Death(KillerRef);
 
 		GetCharacterMovement()->MaxWalkSpeed = 0.0f;
 
@@ -140,7 +143,7 @@ void ACPP_BaseAICharacter::BeginOverlap(UPrimitiveComponent* OverlappedComponent
 {
 	if (bIsPlayingAnimation && OtherActor && OtherActor != this)
 	{
-		if ((Cast<ACPP_BaseAICharacter>(OtherActor) && (Cast<ACPP_BaseAICharacter>(OtherActor)->bIsPlayerControlled) || Cast<ACPP_PlayerCharacter>(OtherActor)))
+		if ((Cast<ACPP_BaseAICharacter>(OtherActor) && Cast<ACPP_BaseAICharacter>(OtherActor)->bIsPlayerControlled) || Cast<ACPP_PlayerCharacter>(OtherActor))
 		{
 			FHitResult Hit;
 			FVector ShotDirection;
@@ -185,7 +188,7 @@ void ACPP_BaseAICharacter::SealCharacter()
 			Cast<ACPP_PlayerCharacter>(GetOwner())->SealedCharacterRef = nullptr;
 		}
 
-		Death();
+		Death(this);
 	}
 }
 

@@ -62,7 +62,7 @@ public:
 
 	void TakeFireDamage();
 
-	virtual void Death();
+	virtual void Death(AActor* KillerRef);
 
 	void StopBurningEffect();
 

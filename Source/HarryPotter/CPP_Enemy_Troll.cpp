@@ -5,6 +5,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Math/UnrealMathUtility.h"
+#include "Kismet/GameplayStatics.h"
+#include "CPP_Spawner_MinionsOfTroll.h"
 
 
 ACPP_Enemy_Troll::ACPP_Enemy_Troll()
@@ -40,4 +42,18 @@ float ACPP_Enemy_Troll::PlayAttackMontage()
 	}
 
 	return 0.0f;
+}
+
+void ACPP_Enemy_Troll::Death(AActor* KillerRef)
+{
+	Super::Death(KillerRef);
+
+	TArray<AActor*> MinionsSpawnerRef;
+
+	UGameplayStatics::GetAllActorsOfClass(this, ACPP_Spawner_MinionsOfTroll::StaticClass(), MinionsSpawnerRef);
+
+	if (MinionsSpawnerRef[0])
+	{
+		MinionsSpawnerRef[0]->Destroy();
+	}
 }

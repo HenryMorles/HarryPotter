@@ -24,4 +24,6 @@ public:
 public:
 
 	virtual float PlayAttackMontage();
+
+	virtual void Death(AActor* KillerRef)override;
 };

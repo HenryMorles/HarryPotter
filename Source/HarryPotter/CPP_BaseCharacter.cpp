@@ -87,7 +87,7 @@ float ACPP_BaseCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dam
 	{
 		StopBurningEffect();
 
-		Death();
+		Death(DamageCauser);
 	}
 	else
 	{
@@ -124,7 +124,7 @@ void ACPP_BaseCharacter::TakeFireDamage()
 	}
 }
 
-void ACPP_BaseCharacter::Death() //The function is overridden in other classes
+void ACPP_BaseCharacter::Death(AActor* KillerRef) //The function is overridden in other classes
 {
 	bIsDeath = true;
 }

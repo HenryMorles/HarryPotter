@@ -18,12 +18,10 @@ public:
 
 	//ACPP_AIController();
 
+	UPROPERTY(EditAnywhere)
+	UBehaviorTree* AIBehavior;
+
 protected:
 
 	virtual void BeginPlay()override;
-
-private:
-
-	UPROPERTY(EditAnywhere)
-	UBehaviorTree* AIBehavior;
 };

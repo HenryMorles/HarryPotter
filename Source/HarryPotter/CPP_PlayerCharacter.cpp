@@ -541,7 +541,7 @@ void ACPP_PlayerCharacter::ChangeSpellDown()
 	}
 }
 
-void ACPP_PlayerCharacter::Death()
+void ACPP_PlayerCharacter::Death(AActor* KillerRef)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Death")));
 }
