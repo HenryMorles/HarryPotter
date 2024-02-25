@@ -25,17 +25,12 @@ ACPP_MagicWand::ACPP_MagicWand()
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	RootComponent = Mesh;
 
-	CurrentSpell = Spell::LeviationSpell;
+	CurrentSpell = Spell::FireBallSpell;
 
 	SpellSpawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("SpellSpawnPoint"));
 	SpellSpawnPoint->SetupAttachment(RootComponent);
 
-	ListOfSpells.Add(Spell::LeviationSpell);
 	ListOfSpells.Add(Spell::FireBallSpell);
-	ListOfSpells.Add(Spell::FireStormSpell);
-	ListOfSpells.Add(Spell::SoulCleansingSpell);
-	ListOfSpells.Add(Spell::SealCreature);
-	ListOfSpells.Add(Spell::CuttingSpell);
 }
 
 void ACPP_MagicWand::UseLeviationSpell()
@@ -235,26 +230,32 @@ void ACPP_MagicWand::SpawnSealParticles(ACPP_BaseAICharacter* TargetPawn, FVecto
 
 void ACPP_MagicWand::ChangeSpellUp()
 {
-	int32 NumTargetSpell = ListOfSpells.Find(CurrentSpell) + 1;
-	if (NumTargetSpell < ListOfSpells.Num())
+	if (!ListOfSpells.IsEmpty())
 	{
-		CurrentSpell = ListOfSpells[NumTargetSpell];
-	}
-	else
-	{
-		CurrentSpell = ListOfSpells[0];
+		int32 NumTargetSpell = ListOfSpells.Find(CurrentSpell) + 1;
+		if (NumTargetSpell < ListOfSpells.Num())
+		{
+			CurrentSpell = ListOfSpells[NumTargetSpell];
+		}
+		else
+		{
+			CurrentSpell = ListOfSpells[0];
+		}
 	}
 }
 
 void ACPP_MagicWand::ChangeSpellDown()
 {
-	int32 NumTargetSpell = ListOfSpells.Find(CurrentSpell) - 1;
-	if (NumTargetSpell >= 0)
+	if (!ListOfSpells.IsEmpty())
 	{
-		CurrentSpell = ListOfSpells[NumTargetSpell];
-	}
-	else
-	{
-		CurrentSpell = ListOfSpells[ListOfSpells.Num() - 1];
+		int32 NumTargetSpell = ListOfSpells.Find(CurrentSpell) - 1;
+		if (NumTargetSpell >= 0)
+		{
+			CurrentSpell = ListOfSpells[NumTargetSpell];
+		}
+		else
+		{
+			CurrentSpell = ListOfSpells[ListOfSpells.Num() - 1];
+		}
 	}
 }

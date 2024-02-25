@@ -13,5 +13,5 @@ ACPP_CuttingSpell::ACPP_CuttingSpell()
 	MovementComponent->MaxSpeed = 4000.0f;
 	MovementComponent->ProjectileGravityScale = 1.0f;
 
-	Damage = 20.0f;
+	Damage = 40.0f;
 }

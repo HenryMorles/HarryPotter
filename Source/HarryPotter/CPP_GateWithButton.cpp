@@ -21,20 +21,9 @@ ACPP_GateWithButton::ACPP_GateWithButton()
 	ButtonCollider_3 = CreateDefaultSubobject<UBoxComponent>(TEXT("ButtonCollider_3"));
 	ButtonCollider_3->SetupAttachment(RootComponent);
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	Mesh->SetupAttachment(RootComponent);
-
-	MyTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("MyTimeline"));
-
-	InterpFunction.BindUFunction(this, FName("TimelineProgress"));
-
-	ZOffset = 650.0f;
-
 	bButtonState_1 = false;
 	bButtonState_2 = false;
 	bButtonState_3 = false;
-
-	bIsOpen = false;
 }
 
 // Called when the game starts or when spawned
@@ -50,25 +39,6 @@ void ACPP_GateWithButton::BeginPlay()
 
 	ButtonCollider_3->OnComponentBeginOverlap.AddDynamic(this, &ACPP_GateWithButton::BeginOverlap);
 	ButtonCollider_3->OnComponentEndOverlap.AddDynamic(this, &ACPP_GateWithButton::EndOverlap);
-
-	if (bIsOpen)
-	{
-		OpenGate();
-	}
-	else
-	{
-		CloseGate();
-	}
-	if (CurveFloat)  // Setting the timeline
-	{
-		MyTimeline->AddInterpFloat(CurveFloat, InterpFunction, FName("Alpha"));
-		
-		StartLocation = Mesh->GetComponentLocation();
-		EndLocation = FVector(Mesh->GetComponentLocation().X, Mesh->GetComponentLocation().Y, Mesh->GetComponentLocation().Z + ZOffset);
-
-		MyTimeline->SetLooping(false);
-		MyTimeline->SetIgnoreTimeDilation(true);
-	}
 }
 
 // Called every frame
@@ -125,28 +95,3 @@ void ACPP_GateWithButton::EndOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 	CloseGate();
 }
-
-void ACPP_GateWithButton::OpenGate()
-{
-	if (!bIsOpen)
-	{
-		MyTimeline->Play();
-		bIsOpen = true;
-	}
-}
-
-void ACPP_GateWithButton::CloseGate()
-{
-	if (bIsOpen)
-	{
-		MyTimeline->Reverse();
-		bIsOpen = false;
-	}
-}
-
-void ACPP_GateWithButton::TimelineProgress(float Value)
-{
-	FVector NewLocation = FMath::Lerp(StartLocation, EndLocation, Value);
-	Mesh->SetWorldLocation(NewLocation);
-}
-

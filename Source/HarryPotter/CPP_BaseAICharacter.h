@@ -33,6 +33,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UCapsuleComponent* AttackColision_2;
 
+
+
 	bool bIsDamageApplied;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

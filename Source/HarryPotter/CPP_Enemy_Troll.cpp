@@ -7,6 +7,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "Kismet/GameplayStatics.h"
 #include "CPP_Spawner_MinionsOfTroll.h"
+#include "CPP_BossFightGate.h"
 
 
 ACPP_Enemy_Troll::ACPP_Enemy_Troll()
@@ -49,11 +50,22 @@ void ACPP_Enemy_Troll::Death(AActor* KillerRef)
 	Super::Death(KillerRef);
 
 	TArray<AActor*> MinionsSpawnerRef;
-
 	UGameplayStatics::GetAllActorsOfClass(this, ACPP_Spawner_MinionsOfTroll::StaticClass(), MinionsSpawnerRef);
 
-	if (MinionsSpawnerRef[0])
+	if (!MinionsSpawnerRef.IsEmpty())
 	{
 		MinionsSpawnerRef[0]->Destroy();
+	}
+
+	TArray<AActor*> ArrayOfGates;
+	UGameplayStatics::GetAllActorsOfClass(this, GateClass, ArrayOfGates);
+
+	if (!MinionsSpawnerRef.IsEmpty())
+	{
+		for (AActor* GateRef : ArrayOfGates)
+		{
+			Cast<ACPP_BossFightGate>(GateRef)->OpenGate();
+			Cast<ACPP_BossFightGate>(GateRef)->bIsActive = false;
+		}
 	}
 }

@@ -21,6 +21,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UAnimMontage* Attack_Montage_2;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<class ACPP_BossFightGate> GateClass;
+
 public:
 
 	virtual float PlayAttackMontage();

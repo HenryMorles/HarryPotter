@@ -95,7 +95,10 @@ float ACPP_BaseCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Dam
 		{
 			StopAnimMontage(GetCurrentMontage());
 
+			SetActorRotation(FRotator(0.0f, 0.0f, 0.0f));   // I use root motion animations, and so sometimes character's rotation can be not correct because of stoping an animation while it playing 
+
 			float AnimDuration = PlayAnimMontage(TakeDamage_Montage);
+
 
 			BeginPlay_Anim(AnimDuration, true);
 		}

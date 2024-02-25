@@ -14,5 +14,5 @@ ACPP_FireBall::ACPP_FireBall()
 	MovementComponent->MaxSpeed = 2000.0f;
 	MovementComponent->ProjectileGravityScale = 1.0f;
 
-	Damage = 10.0f;
+	Damage = 20.0f;
 }
