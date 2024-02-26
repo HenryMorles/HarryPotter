@@ -3,6 +3,7 @@
 
 #include "CPP_BossFightGate.h"
 #include "Components/BoxComponent.h"
+#include "CPP_PlayerCharacter.h"
 
 
 ACPP_BossFightGate::ACPP_BossFightGate()
@@ -24,7 +25,7 @@ void ACPP_BossFightGate::BeginPlay()
 
 void ACPP_BossFightGate::BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (bIsActive)
+	if (bIsActive && Cast<ACPP_PlayerCharacter>(OtherActor))
 	{
 		CloseGate();
 	}
