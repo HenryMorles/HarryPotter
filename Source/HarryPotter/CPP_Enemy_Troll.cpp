@@ -60,7 +60,7 @@ void ACPP_Enemy_Troll::Death(AActor* KillerRef)
 	TArray<AActor*> ArrayOfGates;
 	UGameplayStatics::GetAllActorsOfClass(this, GateClass, ArrayOfGates);
 
-	if (!MinionsSpawnerRef.IsEmpty())
+	if (!ArrayOfGates.IsEmpty())
 	{
 		for (AActor* GateRef : ArrayOfGates)
 		{
